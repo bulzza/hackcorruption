@@ -1,0 +1,198 @@
+/* Page base */
+.research-page-main {
+  background-color: #ffffff;
+  min-height: 100vh;
+}
+
+.research-hero {
+  padding-top: 120px;
+  padding-bottom: 60px;
+  height: 30vh;
+}
+
+.research-hero-content {
+  text-align: center;
+}
+
+.research-hero-title {
+  margin-bottom: 1rem;
+  color: #111827;
+}
+
+.research-hero-subtitle {
+  max-width: 800px;
+  margin: 0 auto;
+  color: #4b5563;
+}
+
+/* If your global CSS doesn't have these, keep them */
+.research-page-main .container {
+  max-width: 1520px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.research-page-main .section-title.large {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 2rem 0;
+}
+
+.research-page-main .hero-title {
+  font-size: clamp(2rem, 4.5vw, 3rem); /* exact from your CSS */
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.research-page-main .hero-subtitle {
+  font-size: clamp(0.95rem, 2vw, 1rem);
+  line-height: 1.7;
+}
+
+/* Research section background like your design */
+.research-page-main .research-section {
+  padding: 4rem 0;
+  background: #f9fafb;
+}
+
+/* Horizontal scroller */
+.research-page-main .research-carousel-container {
+  width: 100%;
+  overflow: hidden;
+}
+
+.research-page-main .research-carousel {
+  display: flex;
+  gap: 2rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 2rem;
+  -webkit-overflow-scrolling: touch;
+
+  /* hide scrollbars */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.research-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+/* Clean card (matches screenshot) */
+.article-card {
+  flex: 0 0 clamp(240px, 70vw, 320px);
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  overflow: visible;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+}
+
+.article-image {
+  height: clamp(180px, 35vw, 200px);
+  width: 100%;
+  margin-bottom: 1rem;
+  border-radius: 2px;
+  background-color: #e5e7eb;
+  background-size: cover;
+  background-position: center;
+}
+
+/* content spacing */
+.article-content {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* meta row */
+.article-meta {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* title & snippet */
+.article-title {
+  font-size: clamp(1.05rem, 2.6vw, 1.25rem);
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.75rem 0;
+  line-height: 1.3;
+}
+
+.article-snippet {
+  color: #4b5563;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Dots */
+.research-page-main .carousel-controls {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.carousel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #e5e7eb;
+  cursor: pointer;
+}
+
+.carousel-dot.active {
+  background-color: #a855f7;
+}
+
+/* Vertical cards for Analysis section */
+.vertical-card {
+  flex: 0 0 clamp(220px, 60vw, 260px);
+}
+
+.vertical-image {
+  height: clamp(220px, 45vw, 340px);
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.vertical-content {
+  text-align: left;
+  padding: 0;
+  margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+  .research-hero {
+    height: 70vh;
+    margin-top: 40px;
+    padding-top: 120px;
+    padding-bottom: 70px;
+  }
+
+  .research-page-main .research-section {
+    padding: 3rem 0;
+  }
+
+  .research-page-main .research-carousel {
+    gap: 1.5rem;
+  }
+}
