@@ -28,30 +28,19 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `cases` (
-  `id` varchar(20) NOT NULL,
+  `id` varchar(30) NOT NULL,
   `court` varchar(255) NOT NULL,
   `judge` varchar(255) DEFAULT NULL,
   `decision_date` date DEFAULT NULL,
-  `legal_area` varchar(100) DEFAULT NULL,
-  `summary` text DEFAULT NULL
+  `legal_area` varchar(255) DEFAULT NULL,
+  `summary` longtext DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `cases`
 --
 
-INSERT INTO `cases` (`id`, `court`, `judge`, `decision_date`, `legal_area`, `summary`) VALUES
-('CASE-2025-001', 'Basic Criminal Court Skopje', 'John Doe', '2025-06-15', 'Criminal', 'Dummy corruption case'),
-('K-2025-02', 'CourtTetovo', 'Bulza Abdili', NULL, 'UpdatedArea', 'Updated'),
-('К-1307/24', 'Основен кривичен суд Скопје', 'Марија Клетничка Марковска', '2024-11-11', 'Кривична област', 'ВО ИМЕТО НА ГРАЃАНИТЕ НА РСМ ОСНОВНИОТ КРИВИЧЕН СУД С., како првостепен кривичен суд преку судијата Марија Клетничка Марковска, како судија поединец, со записничар Деспина Грнчаровска – судски работник, постапувајќи по обвинителниот предлог за издавање казнен налог на ОЈО С. XLVII КО.бр.2738/23 од 28.06.2024 година, против обвинетиот Ајдин Љамалари од С., за кривично дело – Загрозување на безбедноста на сообраќајот од чл.297 ст.3 в.в. ст.1 од КЗ, согласно чл.499 од ЗКП, на ден 04.07.2024 година, ја донесе следната П Р Е С У Д А за издавање на казнен налог ОБВИНЕТИОТ: АЈДИН ЉАМАЛАРИ , со ЕМБГ ..., од татко ..., роден на ... година во С., каде и живее на ул.„...“ бр...., со возачка дозвола со број ... издадена од Министерството С., државјанин на РСМ, неосудуван...'),
-('К-1521/24', '??????? ???????? ??? ??????', '?????? ????????? ?????????', '2024-11-15', '???????? ??????', 'Test update'),
-('К-1861/24', 'Основен кривичен суд Скопје', 'Марија Клетничка Марковска', '2024-12-02', 'Кривична област', 'ВО ИМЕТО НА ГРАЃАНИТЕ НА РСМ ОСНОВНИОТ КРИВИЧЕН СУД С., како првостепен кривичен суд преку судијата Марија Клетничка Марковска, како судија поединец, со записничар Деспина Грнчаровска – судски работник, постапувајќи по обвинителниот предлог за издавање казнен налог на ОЈО С. XLII КO.бр.1756/24 од 09.10.2024 година, против обвинетиот Бесар Адеми од с.Б., С., за кривично дело – Загрозување на безбедноста на сообраќајот од чл.297 ст.3 в.в. со ст.1 од КЗ, согласно чл.499 од ЗКП, на ден 21.10.2024 година, ја донесе следната П Р Е С У Д А за издавање на казнен налог ОБВИНЕТИОT: БЕСАР АДЕМИ , со ЕМБГ ..., од татко ..., роден на ... година во С., со живеалиште на ул.„...“ бр...., с.Б. во С., државјанин на РСМ, осудуван, не се води постапка за друго кривично дело. В...'),
-('К-1924/24', 'Основен кривичен суд Скопје', 'Марија Клетничка Марковска', '2024-11-19', 'Кривична област', 'ВО ИМЕТО НА ГРАЃАНИТЕ НА РСМ ОСНОВНИОТ КРИВИЧЕН СУД С., како првостепен кривичен суд преку судијата Марија Клетничка Марковска, како судија поединец, со записничар Деспина Грнчаровска – судски работник, постапувајќи по обвинителниот предлог за издавање казнен налог на ОЈО С. XXXVII KO.бр.2750/24 од 21.10.2024 година, против обвинетиот Генади Петрески од С., за кривично дело Неплаќање издршка од чл.202 ст.1 од КЗ, согласно чл.499 од ЗКП, на ден 29.10.2024 година, ја донесе следната П Р Е С У Д А за издавање на казнен налог ОБВИНЕТИОT: ГЕНАДИ ПЕТРЕСКИ, со ЕМБГ ...., роден на ... година во С., каде и живее на ул.„...“ бр.... Д., државјанин на РСМ. В И Н О В Е Н Е ЗАТОА ШТО: Во периодот од 01.01.2023 година до 30.06.2024 година, одбегнувал да дава издршка на неговите...'),
-('К-1959/25', 'Основен кривичен суд Скопје', 'Моника Бахчовановска', '2025-12-15', 'Criminal Matter', 'Hearing scheduled for 15.12.2025 at 09:00, Courtroom 8.'),
-('К-2010/24', 'Основен кривичен суд Скопје', 'Марија Клетничка Марковска', '2025-10-15', 'Criminal Matter', 'Case status: Open. Last update: 15.10.2025.'),
-('К-2023/24', 'Основен кривичен суд Скопје', 'Марија Клетничка Марковска', '2024-11-28', 'Кривична област', 'ВО ИМЕТО НА ГРАЃАНИТЕ НА РСМ ОСНОВНИОТ КРИВИЧЕН СУД С., како првостепен кривичен суд преку судијата Марија Клетничка Марковска, како судија поединец, со записничар Деспина Грнчаровска – судски работник, постапувајќи по обвинителниот предлог за издавање казнен налог на ОЈО С. V КO.бр.2032/24 од 31.10.2024 година, против обвинетиот Ељми Лесковица од С., за кривично дело – Загрозување на безбедноста на сообраќајот од чл.297 ст.3 в.в. ст.1 од КЗ, согласно чл.499 од ЗКП, на ден 13.11.2024 година, ја донесе следната П Р Е С У Д А за издавање на казнен налог ОБВИНЕТИОT: ЕЉМИ ЛЕСКОВИЦА, со ЕМБГ ..., од татко ..., роден во С., каде и живее на ул.„...“ бр.... во с.В., државјанин на РСМ. В И Н О В Е Н Е ЗАТОА ШТО: На 26.05.2023 година, во 16,15 часот, во С., како учесник...'),
-('ПРК-С-2659/25', 'Основен кривичен суд Скопје', 'Влатко Сековски', '2025-12-15', 'Criminal Matter', 'Hearing scheduled for 15.12.2025 at 09:00, Courtroom 9.'),
-('ПРК-С-368/25', 'Основен кривичен суд Скопје', 'Тереза Лазовска', '2025-12-15', 'Criminal Matter', 'Hearing scheduled for 15.12.2025 at 09:00, Courtroom 7.');
+
 
 -- --------------------------------------------------------
 
@@ -61,11 +50,11 @@ INSERT INTO `cases` (`id`, `court`, `judge`, `decision_date`, `legal_area`, `sum
 
 CREATE TABLE `case_detail` (
   `id` int(11) NOT NULL,
-  `case_id` varchar(20) NOT NULL,
-  `case_type` varchar(100) DEFAULT NULL,
-  `case_subtype` varchar(100) DEFAULT NULL,
-  `basis_type` varchar(100) DEFAULT NULL,
-  `basis` varchar(100) DEFAULT NULL,
+  `case_id` varchar(30) NOT NULL,
+  `case_type` varchar(120) DEFAULT NULL,
+  `case_subtype` varchar(120) DEFAULT NULL,
+  `basis_type` varchar(255) DEFAULT NULL,
+  `basis` varchar(255) DEFAULT NULL,
   `articles` varchar(255) DEFAULT NULL,
   `public_prosecutor_case` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -104,7 +93,7 @@ INSERT INTO `case_detail` (`id`, `case_id`, `case_type`, `case_subtype`, `basis_
 
 CREATE TABLE `case_financials` (
   `id` int(11) NOT NULL,
-  `case_id` varchar(20) NOT NULL,
+  `case_id` varchar(30) NOT NULL,
   `case_cost` decimal(10,2) DEFAULT NULL,
   `total_case_cost` decimal(10,2) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -133,7 +122,7 @@ INSERT INTO `case_financials` (`id`, `case_id`, `case_cost`, `total_case_cost`) 
 
 CREATE TABLE `case_insights` (
   `id` int(11) NOT NULL,
-  `case_id` varchar(20) NOT NULL,
+  `case_id` varchar(30) NOT NULL,
   `mitigating_factors` varchar(100) DEFAULT NULL,
   `plea_deal` varchar(100) DEFAULT NULL,
   `duration_days` int(11) DEFAULT NULL,
@@ -166,7 +155,7 @@ INSERT INTO `case_insights` (`id`, `case_id`, `mitigating_factors`, `plea_deal`,
 
 CREATE TABLE `case_timeline` (
   `id` int(11) NOT NULL,
-  `case_id` varchar(20) NOT NULL,
+  `case_id` varchar(30) NOT NULL,
   `event_date` date NOT NULL,
   `event_name` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -283,7 +272,13 @@ CREATE TABLE `court_cases` (
   `subtype` varchar(120) DEFAULT NULL,
   `basis_type` varchar(255) DEFAULT NULL,
   `filing_date` date DEFAULT NULL,
-  `status` varchar(60) DEFAULT 'Unknown'
+  `status` varchar(60) DEFAULT 'Unknown',
+  `judge_name` varchar(255) DEFAULT NULL,
+  `legal_area` varchar(255) DEFAULT NULL,
+  `basis_group` varchar(255) DEFAULT NULL,
+  `basis` varchar(255) DEFAULT NULL,
+  `download_link` text DEFAULT NULL,
+  `summary` longtext DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
