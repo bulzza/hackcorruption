@@ -112,25 +112,56 @@ const navGroups = [
     ],
   },
   {
-    title: "Utils",
-    items: [
-      {
-        label: "Research",
-        to: "/research",
-        icon: (
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
-            <path
-              d="M21 21L16.65 16.65M18 11C18 14.866 14.866 18 11 18C7.134 18 4 14.866 4 11C4 7.134 7.134 4 11 4C14.866 4 18 7.134 18 11Z"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        ),
-      },
-    ],
-  },
+  title: "Utils",
+  items: [
+    {
+      label: "Research",
+      to: "/research",
+      icon: (
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+          <path
+            d="M21 21L16.65 16.65M18 11C18 14.866 14.866 18 11 18C7.134 18 4 14.866 4 11C4 7.134 7.134 4 11 4C14.866 4 18 7.134 18 11Z"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      ),
+    },
+
+    {
+      label: "News",
+      to: "/news",
+      icon: (
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+          <path
+            d="M4 5H20M4 9H20M4 13H14M4 17H14"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+          />
+        </svg>
+      ),
+    },
+
+    {
+      label: "Publications",
+      to: "/publications",
+      icon: (
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+          <path
+            d="M4 6C4 5.44772 4.44772 5 5 5H19C19.5523 5 20 5.44772 20 6V20L12 16L4 20V6Z"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+          />
+        </svg>
+      ),
+    },
+  ],
+}
+
 ];
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>

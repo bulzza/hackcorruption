@@ -36,6 +36,7 @@ export default function DashboardCaseCreate() {
   const normalizePayload = (payload: CaseInput): CaseInput => ({
     ...payload,
     id: payload.id.trim(),
+    court_id: payload.court_id === null ? null : Number(payload.court_id),
     court: payload.court.trim(),
     judge: payload.judge.trim(),
     legal_area: payload.legal_area.trim(),

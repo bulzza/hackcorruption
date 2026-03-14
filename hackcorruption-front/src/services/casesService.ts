@@ -3,6 +3,7 @@ import { API_BASE } from "./apiConfig";
 export type Case = {
   record_key: string;
   id: string;
+  court_id: number | null;
   court: string;
   judge: string | null;
   decision_date: string | null;
@@ -80,6 +81,7 @@ export type CaseTimelineItemInput = {
 
 export type CaseInput = {
   id: string;
+  court_id: number | null;
   court: string;
   judge: string;
   decision_date: string;
@@ -101,6 +103,7 @@ type ApiResponse<T> = {
 type CaseRow = {
   record_key?: string | null;
   id: string;
+  court_id?: number | string | null;
   court: string;
   judge: string | null;
   decision_date: string | null;
@@ -129,6 +132,7 @@ const toNullableNumber = (value: number | string | null | undefined) => {
 const mapCaseRow = (row: CaseRow): Case => ({
   record_key: row.record_key ?? String(row.id ?? ""),
   id: String(row.id ?? ""),
+  court_id: toNullableNumber(row.court_id ?? null),
   court: row.court ?? "",
   judge: row.judge ?? null,
   decision_date: row.decision_date ?? null,

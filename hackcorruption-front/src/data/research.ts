@@ -1,9 +1,11 @@
+import type { TKey } from "../i18n/translations";
+
 export type ResearchCard = {
   image: string;
-  typeLabel: string;
-  dateLabel: string;
-  title: string;
-  snippet: string;
+  typeKey: TKey;
+  dateISO: string;
+  titleKey: TKey;
+  snippetKey: TKey;
   variant?: "horizontal" | "vertical";
 };
 
@@ -11,47 +13,46 @@ export const publications: ResearchCard[] = [
   {
     image:
       "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-    typeLabel: "Publications",
-    dateLabel: "October 30, 2025",
-    title: "Berlin Process and The Way Forward",
-    snippet: "Analysis of the Chair's Conclusions and impact on the Berlin Process 2025.",
+    typeKey: "research_type_publications",
+    dateISO: "2025-10-30",
+    titleKey: "research_pub_1_title",
+    snippetKey: "research_pub_1_snippet",
     variant: "horizontal",
   },
   {
     image:
       "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-    typeLabel: "Publications",
-    dateLabel: "October 21, 2025",
-    title: "From Resilience to Renewal: Economic Outlook",
-    snippet: "The 2025 Annual Meetings marked a turning point in global economic strategy.",
+    typeKey: "research_type_publications",
+    dateISO: "2025-10-21",
+    titleKey: "research_pub_2_title",
+    snippetKey: "research_pub_2_snippet",
     variant: "horizontal",
   },
   {
     image:
       "https://images.unsplash.com/photo-1451187580459-43490279c0fa?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-    typeLabel: "Publications",
-    dateLabel: "June 16, 2025",
-    title: "G7 Summit 2025: Strategic Cooperation",
-    snippet:
-      "Changes in Kananaskis, Canada, come at a time of significant geopolitical uncertainty.",
+    typeKey: "research_type_publications",
+    dateISO: "2025-06-16",
+    titleKey: "research_pub_3_title",
+    snippetKey: "research_pub_3_snippet",
     variant: "horizontal",
   },
   {
     image:
       "https://images.unsplash.com/photo-1450101499163-c8848c66ca85?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-    typeLabel: "Publications",
-    dateLabel: "June 11, 2025",
-    title: "Investing in Climate for Growth",
-    snippet: "New OECD-UNDP report shows how climate action can drive economic growth.",
+    typeKey: "research_type_publications",
+    dateISO: "2025-06-11",
+    titleKey: "research_pub_4_title",
+    snippetKey: "research_pub_4_snippet",
     variant: "horizontal",
   },
   {
     image:
       "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-    typeLabel: "Publications",
-    dateLabel: "May 20, 2025",
-    title: "Eurobarometer: Trust in EU Institutions",
-    snippet: "Over half of Europeans tend to trust the EU, the highest result since 2014.",
+    typeKey: "research_type_publications",
+    dateISO: "2025-05-20",
+    titleKey: "research_pub_5_title",
+    snippetKey: "research_pub_5_snippet",
     variant: "horizontal",
   },
 ];
@@ -60,47 +61,46 @@ export const analyses: ResearchCard[] = [
   {
     image:
       "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-    typeLabel: "REPORT",
-    dateLabel: "NOVEMBER 10, 2025",
-    title: "AI Liability Directives",
-    snippet: "Navigating the new EU framework for civil liability in artificial intelligence systems.",
+    typeKey: "research_type_report",
+    dateISO: "2025-11-10",
+    titleKey: "research_analysis_1_title",
+    snippetKey: "research_analysis_1_snippet",
     variant: "vertical",
   },
   {
     image:
       "https://images.unsplash.com/photo-1639322537228-f710d846310a?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-    typeLabel: "ANALYSIS",
-    dateLabel: "OCTOBER 24, 2025",
-    title: "Smart Contract Validity",
-    snippet: "Examining the legal enforceability of blockchain-based agreements in commercial law.",
+    typeKey: "research_type_analysis",
+    dateISO: "2025-10-24",
+    titleKey: "research_analysis_2_title",
+    snippetKey: "research_analysis_2_snippet",
     variant: "vertical",
   },
   {
     image:
       "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-    typeLabel: "OPINION",
-    dateLabel: "OCTOBER 12, 2025",
-    title: "Digital Rights Charter",
-    snippet: "Proposed amendments to data privacy laws protecting citizen rights in the metaverse.",
+    typeKey: "research_type_opinion",
+    dateISO: "2025-10-12",
+    titleKey: "research_analysis_3_title",
+    snippetKey: "research_analysis_3_snippet",
     variant: "vertical",
   },
   {
     image:
       "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-    typeLabel: "COMMENTARY",
-    dateLabel: "AUGUST 28, 2025",
-    title: "Judicial Analytics",
-    snippet: "Leveraging big data to improve caseflow management and reduce court backlogs.",
+    typeKey: "research_type_commentary",
+    dateISO: "2025-08-28",
+    titleKey: "research_analysis_4_title",
+    snippetKey: "research_analysis_4_snippet",
     variant: "vertical",
   },
   {
     image:
       "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
-    typeLabel: "COMMENTARY",
-    dateLabel: "AUGUST 15, 2025",
-    title: "Cross-Border Protocols",
-    snippet:
-      "Standardizing e-evidence procedures across member states for faster resolution.",
+    typeKey: "research_type_commentary",
+    dateISO: "2025-08-15",
+    titleKey: "research_analysis_5_title",
+    snippetKey: "research_analysis_5_snippet",
     variant: "vertical",
   },
 ];

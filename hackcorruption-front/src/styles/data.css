@@ -4,7 +4,7 @@
   --bg-color: #000000;
   --text-color: #ffffff;
   --text-muted: #cccccc;
-  --accent-color: #C19083;
+  --accent-color: #c19083;
   --bg-light: #ffffff;
   --text-dark: #000000;
   --text-dark-muted: #555555;
@@ -20,7 +20,7 @@
 
 body {
   font-family: var(--font-main);
-  background-color: var(--bg-color);
+  background-color: white;
   color: var(--text-color);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -321,7 +321,7 @@ body {
 /* Partners Section */
 .partners-section {
   padding: 80px 0;
-  background-color: var(--bg-light);
+  background-color: white;
   text-align: center;
   overflow: hidden;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);

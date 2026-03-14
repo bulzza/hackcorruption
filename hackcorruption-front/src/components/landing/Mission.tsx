@@ -6,11 +6,21 @@ export default function Mission() {
 
   return (
     <section className="mission section-light">
-      <div className="container mission-content">
-        <h2 className="mission-title" style={{ whiteSpace: "pre-line" }}>
-          {t("mission_title")}
-        </h2>
-        <p className="mission-desc">{t("mission_desc")}</p>
+      <div className="container">
+        <div className="mission-frame">
+          <div className="mission-grid">
+            <div className="mission-heading">
+              <div className="expertise-line mission-line" aria-hidden="true"></div>
+              <h2 className="mission-title" style={{ whiteSpace: "pre-line" }}>
+                {t("mission_title")}
+              </h2>
+            </div>
+
+            <div className="mission-copy">
+              <p className="mission-desc">{t("mission_desc")}</p>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );

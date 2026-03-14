@@ -103,6 +103,11 @@ function case_payload_main_values(array $payload): array
     ];
 }
 
+function case_payload_court_id(array $payload): ?int
+{
+    return to_nullable_int($payload['court_id'] ?? null);
+}
+
 function case_payload_detail_values(array $payload): array
 {
     $detail = is_array($payload['case_detail'] ?? null) ? $payload['case_detail'] : [];
@@ -335,87 +340,36 @@ function replace_case_related_sections(PDO $pdo, string $caseId, array $payload)
     replace_case_timeline($pdo, $caseId, case_payload_timeline_values($payload));
 }
 
-function case_slugify(string $value): string
+function find_court(PDO $pdo, ?int $courtId, ?string $courtName): array
 {
-    $value = trim($value);
-    if ($value === '') {
-        return 'court';
-    }
-
-    $ascii = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
-    if ($ascii !== false) {
-        $value = $ascii;
-    }
-
-    $slug = strtolower($value);
-    $slug = preg_replace('/[^a-z0-9]+/', '-', $slug) ?? '';
-    $slug = trim($slug, '-');
-
-    return $slug !== '' ? $slug : 'court';
-}
-
-function case_unique_court_slug(PDO $pdo, string $baseSlug): string
-{
-    $slug = $baseSlug;
-    $counter = 2;
-
-    while (true) {
-        $stmt = $pdo->prepare("SELECT 1 FROM courts WHERE slug = :slug LIMIT 1");
-        $stmt->execute([':slug' => $slug]);
-
-        if (!$stmt->fetchColumn()) {
-            return $slug;
+    if ($courtId !== null) {
+        $stmt = $pdo->prepare("SELECT id, name, slug FROM courts WHERE id = :id LIMIT 1");
+        $stmt->execute([':id' => $courtId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($row) {
+            return $row;
         }
 
-        $slug = $baseSlug . '-' . $counter;
-        $counter++;
-    }
-}
-
-function find_or_create_court(PDO $pdo, ?string $courtName): array
-{
-    if ($courtName === null) {
-        throw new InvalidArgumentException("Missing required field: court");
+        throw new InvalidArgumentException("Selected court was not found");
     }
 
-    if (ctype_digit($courtName)) {
-        $stmt = $pdo->prepare("SELECT id, name, slug FROM courts WHERE id = :id LIMIT 1");
-        $stmt->execute([':id' => (int)$courtName]);
+    if ($courtName !== null) {
+        $stmt = $pdo->prepare("SELECT id, name, slug FROM courts WHERE name = :name LIMIT 1");
+        $stmt->execute([':name' => $courtName]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($row) {
+            return $row;
+        }
+
+        $stmt = $pdo->prepare("SELECT id, name, slug FROM courts WHERE slug = :slug LIMIT 1");
+        $stmt->execute([':slug' => $courtName]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($row) {
             return $row;
         }
     }
 
-    $stmt = $pdo->prepare("SELECT id, name, slug FROM courts WHERE name = :name LIMIT 1");
-    $stmt->execute([':name' => $courtName]);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    if ($row) {
-        return $row;
-    }
-
-    $stmt = $pdo->prepare("SELECT id, name, slug FROM courts WHERE slug = :slug LIMIT 1");
-    $stmt->execute([':slug' => $courtName]);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    if ($row) {
-        return $row;
-    }
-
-    $slug = case_unique_court_slug($pdo, case_slugify($courtName));
-    $insertStmt = $pdo->prepare("
-        INSERT INTO courts (slug, name, court_type, address, phone, jurisdiction, about)
-        VALUES (:slug, :name, NULL, NULL, NULL, NULL, NULL)
-    ");
-    $insertStmt->execute([
-        ':slug' => $slug,
-        ':name' => $courtName,
-    ]);
-
-    return [
-        'id' => (int)$pdo->lastInsertId(),
-        'name' => $courtName,
-        'slug' => $slug,
-    ];
+    throw new InvalidArgumentException("Missing required field: court_id");
 }
 
 function upsert_shadow_case(PDO $pdo, string $caseId, array $mainValues): void
@@ -582,6 +536,7 @@ function map_case_detail_response(PDO $pdo, array $row): array
     return [
         'record_key' => 'courtcase-' . $row['court_case_row_id'],
         'id' => $caseId,
+        'court_id' => isset($row['court_id']) ? (int)$row['court_id'] : null,
         'court' => $row['court_name'] ?? '',
         'judge' => $row['judge_name'] ?? null,
         'decision_date' => $row['filing_date'] ?? null,
@@ -621,6 +576,7 @@ function case_list(PDO $pdo, bool $includeCourtFiles = false): array
         SELECT
             CONCAT('courtcase-', cc.id) AS record_key,
             cc.case_id AS id,
+            cc.court_id AS court_id,
             c.name AS court,
             cc.judge_name AS judge,
             cc.filing_date AS decision_date,
@@ -652,11 +608,12 @@ function case_get(PDO $pdo, string $caseId): ?array
 function case_create(PDO $pdo, array $payload): array
 {
     $id = trim((string)($payload['id'] ?? ''));
+    $courtId = case_payload_court_id($payload);
     $mainValues = case_payload_main_values($payload);
     $detailValues = case_payload_detail_values($payload);
 
-    if ($id === '' || $mainValues['court'] === null) {
-        throw new InvalidArgumentException("Missing required fields: id, court");
+    if ($id === '' || $courtId === null) {
+        throw new InvalidArgumentException("Missing required fields: id, court_id");
     }
 
     $existsStmt = $pdo->prepare("SELECT 1 FROM court_cases WHERE case_id = :id LIMIT 1");
@@ -668,10 +625,12 @@ function case_create(PDO $pdo, array $payload): array
     $pdo->beginTransaction();
 
     try {
-        $court = find_or_create_court($pdo, $mainValues['court']);
-        upsert_shadow_case($pdo, $id, $mainValues);
+        $court = find_court($pdo, $courtId, $mainValues['court']);
+        $storedMainValues = $mainValues;
+        $storedMainValues['court'] = $court['name'];
+        upsert_shadow_case($pdo, $id, $storedMainValues);
 
-        $status = $mainValues['status'] ?? 'Unknown';
+        $status = $storedMainValues['status'] ?? 'Unknown';
         $insertStmt = $pdo->prepare("
             INSERT INTO court_cases
                 (court_id, case_id, type, subtype, basis_type, filing_date, status, judge_name, legal_area, basis_group, basis, download_link, summary)
@@ -696,7 +655,7 @@ function case_create(PDO $pdo, array $payload): array
         $rowId = (int)$pdo->lastInsertId();
 
         replace_case_related_sections($pdo, $id, $payload);
-        sync_case_judge_links($pdo, $id, $mainValues, $detailValues);
+        sync_case_judge_links($pdo, $id, $storedMainValues, $detailValues);
 
         $pdo->commit();
         return case_get($pdo, 'courtcase-' . $rowId) ?? [];
@@ -715,18 +674,21 @@ function case_update(PDO $pdo, string $caseId, array $payload): array
         throw new InvalidArgumentException("Case '$caseId' not found");
     }
 
+    $courtId = case_payload_court_id($payload);
     $mainValues = case_payload_main_values($payload);
     $detailValues = case_payload_detail_values($payload);
 
-    if ($mainValues['court'] === null) {
-        throw new InvalidArgumentException("Missing required field: court");
+    if ($courtId === null) {
+        throw new InvalidArgumentException("Missing required field: court_id");
     }
 
     $pdo->beginTransaction();
 
     try {
-        $court = find_or_create_court($pdo, $mainValues['court']);
-        $status = $mainValues['status'] ?? ($existing['status'] ?? 'Unknown');
+        $court = find_court($pdo, $courtId, $mainValues['court']);
+        $storedMainValues = $mainValues;
+        $storedMainValues['court'] = $court['name'];
+        $status = $storedMainValues['status'] ?? ($existing['status'] ?? 'Unknown');
 
         $updateStmt = $pdo->prepare("
             UPDATE court_cases
@@ -761,7 +723,6 @@ function case_update(PDO $pdo, string $caseId, array $payload): array
             ':summary' => $mainValues['summary'],
         ]);
 
-        $storedMainValues = $mainValues;
         $storedMainValues['status'] = $status;
 
         upsert_shadow_case($pdo, (string)$existing['case_id'], $storedMainValues);

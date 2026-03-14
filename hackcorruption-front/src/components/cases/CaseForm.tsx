@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useBlocker } from "react-router-dom";
 import ConfirmDialog from "../judges/ConfirmDialog";
 import RepeatableTimeline from "./RepeatableTimeline";
+import { listCourts } from "../../services/courtsService";
+import type { Court } from "../../services/courtsService";
 import type {
   CaseDetail,
   CaseInput,
@@ -17,9 +19,11 @@ type CaseFormProps = {
 };
 
 type ToastState = { message: string; tone: "success" | "error" };
+type CaseTextField = "id" | "court" | "judge" | "decision_date" | "legal_area" | "summary";
 
 const emptyCase = (): CaseInput => ({
   id: "",
+  court_id: null,
   court: "",
   judge: "",
   decision_date: "",
@@ -50,6 +54,7 @@ const emptyCase = (): CaseInput => ({
 
 const toInput = (item: CaseDetail): CaseInput => ({
   id: item.id ?? "",
+  court_id: item.court_id ?? null,
   court: item.court ?? "",
   judge: item.judge ?? "",
   decision_date: item.decision_date ?? "",
@@ -100,6 +105,9 @@ export default function CaseForm({
   const [isDirty, setIsDirty] = useState(false);
   const [openSection, setOpenSection] = useState("case");
   const [leaveOpen, setLeaveOpen] = useState(false);
+  const [courts, setCourts] = useState<Court[]>([]);
+  const [courtsLoading, setCourtsLoading] = useState(true);
+  const [courtsError, setCourtsError] = useState<string | null>(null);
 
   const blocker = useBlocker(isDirty);
   const initialId = initialData?.id ?? "";
@@ -126,10 +134,46 @@ export default function CaseForm({
     return () => window.clearTimeout(timer);
   }, [toast]);
 
+  useEffect(() => {
+    let mounted = true;
+    listCourts()
+      .then((data) => {
+        if (!mounted) return;
+        setCourts([...data].sort((left, right) => left.name.localeCompare(right.name)));
+        setCourtsError(null);
+        setCourtsLoading(false);
+      })
+      .catch((err) => {
+        if (!mounted) return;
+        setCourtsError(err instanceof Error ? err.message : "Failed to load courts.");
+        setCourtsLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const getError = (path: string) => errors[path];
 
-  const handleCaseChange = (field: keyof CaseInput, value: string) => {
+  const handleCaseChange = (field: CaseTextField, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+    setIsDirty(true);
+  };
+
+  const handleCourtChange = (value: string) => {
+    if (!value) {
+      setForm((prev) => ({ ...prev, court_id: null, court: "" }));
+      setIsDirty(true);
+      return;
+    }
+
+    const selectedCourt = courts.find((item) => String(item.id) === value);
+    setForm((prev) => ({
+      ...prev,
+      court_id: selectedCourt?.id ?? null,
+      court: selectedCourt?.name ?? "",
+    }));
     setIsDirty(true);
   };
 
@@ -184,7 +228,7 @@ export default function CaseForm({
     if (idValue && existing.includes(normalizedId) && normalizedId !== initialId.toLowerCase()) {
       nextErrors.id = "Case ID must be unique.";
     }
-    if (!form.court.trim()) nextErrors.court = "Court is required.";
+    if (form.court_id === null) nextErrors.court = "Court is required.";
     if (!form.judge.trim()) nextErrors.judge = "Judge is required.";
     if (!form.decision_date) nextErrors.decision_date = "Decision date is required.";
     if (!form.legal_area.trim()) nextErrors.legal_area = "Legal area is required.";
@@ -248,6 +292,9 @@ export default function CaseForm({
       if (lower.includes("id")) {
         setErrors((prev) => ({ ...prev, id: message }));
         setOpenSection("case");
+      } else if (lower.includes("court")) {
+        setErrors((prev) => ({ ...prev, court: message }));
+        setOpenSection("case");
       }
     } finally {
       setSaving(false);
@@ -300,12 +347,22 @@ export default function CaseForm({
               </label>
               <label className="admin-form-field">
                 <span>Court</span>
-                <input
+                <select
                   className="admin-input"
-                  value={form.court}
-                  onChange={(e) => handleCaseChange("court", e.target.value)}
-                  placeholder="Court name"
-                />
+                  value={form.court_id === null ? "" : String(form.court_id)}
+                  onChange={(e) => handleCourtChange(e.target.value)}
+                  disabled={courtsLoading}
+                >
+                  <option value="">
+                    {courtsLoading ? "Loading courts..." : "Select a court"}
+                  </option>
+                  {courts.map((court) => (
+                    <option key={court.id} value={court.id}>
+                      {court.name}
+                    </option>
+                  ))}
+                </select>
+                {courtsError && <span className="admin-field-error">{courtsError}</span>}
                 {getError("court") && (
                   <span className="admin-field-error">{getError("court")}</span>
                 )}
@@ -596,7 +653,7 @@ export default function CaseForm({
         <button className="admin-btn ghost" type="button" onClick={onCancel}>
           Cancel
         </button>
-        <button className="admin-btn primary" type="submit" disabled={saving}>
+        <button className="admin-btn primary" type="submit" disabled={saving || courtsLoading}>
           {saving ? "Saving..." : "Save"}
         </button>
       </div>
