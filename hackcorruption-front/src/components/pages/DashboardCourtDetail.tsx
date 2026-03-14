@@ -1,14 +1,31 @@
 import { Link, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ConfirmDialog from "../judges/ConfirmDialog";
 import { getCourtById, toggleCourtStatus } from "../../services/courtsService";
 import type { CourtDetail } from "../../services/courtsService";
+
+const DEFAULT_CASE_PAGE_SIZE = 8;
+const CASE_PAGE_SIZE_OPTIONS = [5, 8, 12, 20];
+
+function getVisiblePages(currentPage: number, totalPages: number) {
+  const windowSize = 5;
+  if (totalPages <= windowSize) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const start = Math.max(1, Math.min(currentPage - 2, totalPages - windowSize + 1));
+  return Array.from({ length: windowSize }, (_, index) => start + index);
+}
 
 export default function DashboardCourtDetail() {
   const { id } = useParams<{ id: string }>();
   const [court, setCourt] = useState<CourtDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [caseSearch, setCaseSearch] = useState("");
+  const [caseStatusFilter, setCaseStatusFilter] = useState("All");
+  const [casePageSize, setCasePageSize] = useState(DEFAULT_CASE_PAGE_SIZE);
+  const [casePage, setCasePage] = useState(1);
 
   useEffect(() => {
     let mounted = true;
@@ -25,11 +42,63 @@ export default function DashboardCourtDetail() {
     };
   }, [id]);
 
+  const filteredCases = useMemo(() => {
+    const query = caseSearch.trim().toLowerCase();
+    return (court?.cases ?? []).filter((item) => {
+      const matchesQuery =
+        !query ||
+        item.id.toLowerCase().includes(query) ||
+        item.type.toLowerCase().includes(query) ||
+        item.subtype.toLowerCase().includes(query) ||
+        item.basisType.toLowerCase().includes(query) ||
+        item.status.toLowerCase().includes(query);
+      const matchesStatus =
+        caseStatusFilter === "All" ? true : item.status === caseStatusFilter;
+      return matchesQuery && matchesStatus;
+    });
+  }, [caseSearch, caseStatusFilter, court?.cases]);
+
+  useEffect(() => {
+    setCasePage(1);
+  }, [casePageSize, caseSearch, caseStatusFilter, court?.id]);
+
+  const totalCasePages = Math.max(1, Math.ceil(filteredCases.length / casePageSize));
+  const casePageStart = (casePage - 1) * casePageSize;
+  const caseRows = filteredCases.slice(casePageStart, casePageStart + casePageSize);
+  const visibleCasePages = getVisiblePages(casePage, totalCasePages);
+  const totalCases = court?.cases.length ?? 0;
+  const activeCases = useMemo(
+    () => (court?.cases ?? []).filter((item) => item.status === "Active").length,
+    [court?.cases]
+  );
+  const closedCases = useMemo(
+    () => (court?.cases ?? []).filter((item) => item.status === "Closed").length,
+    [court?.cases]
+  );
+  const unknownCases = Math.max(0, totalCases - activeCases - closedCases);
+  const caseShowingFrom = filteredCases.length === 0 ? 0 : casePageStart + 1;
+  const caseShowingTo =
+    filteredCases.length === 0 ? 0 : Math.min(casePageStart + caseRows.length, filteredCases.length);
+  const hasCaseFilters = caseSearch.trim().length > 0 || caseStatusFilter !== "All";
+
+  useEffect(() => {
+    if (casePage > totalCasePages) {
+      setCasePage(totalCasePages);
+    }
+  }, [casePage, totalCasePages]);
+
+  const resetCaseFilters = () => {
+    setCaseSearch("");
+    setCaseStatusFilter("All");
+    setCasePageSize(DEFAULT_CASE_PAGE_SIZE);
+    setCasePage(1);
+  };
+
   const handleToggleStatus = async () => {
     if (!court) return;
     try {
       const updated = await toggleCourtStatus(court.id);
-      setCourt((prev) => (prev ? { ...prev, ...updated } : prev));
+      setCourt((prev) => (prev ? { ...prev, status: updated.status } : prev));
     } catch (err) {
       console.warn(err);
     } finally {
@@ -135,14 +204,26 @@ export default function DashboardCourtDetail() {
             <div>
               <span>Website</span>
               <strong>
-                <a href={court.website} target="_blank" rel="noreferrer" style={{ color: "#3b82f6" }}>
-                  {court.website}
-                </a>
+                {court.website ? (
+                  <a href={court.website} target="_blank" rel="noreferrer" style={{ color: "#3b82f6" }}>
+                    {court.website}
+                  </a>
+                ) : (
+                  "Not provided"
+                )}
               </strong>
             </div>
             <div>
               <span>Status</span>
-              <strong>{court.status}</strong>
+              <strong>
+                <span
+                  className={`admin-status-badge ${
+                    court.status === "Active" ? "active" : "inactive"
+                  }`}
+                >
+                  {court.status}
+                </span>
+              </strong>
             </div>
           </div>
         </section>
@@ -174,59 +255,199 @@ export default function DashboardCourtDetail() {
           </section>
         )}
 
-        {court.caseTypes && court.caseTypes.length > 0 && (
-          <section className="admin-card">
-            <div className="admin-card-header">
-              <h2>Case Types Distribution</h2>
-            </div>
-            <div className="admin-card-body">
-              <div className="admin-list-grid">
-                {court.caseTypes.map((item, index) => (
-                  <div className="admin-list-card" key={index}>
-                    <strong>{item.label}</strong>
-                    <span>{item.value} cases</span>
-                  </div>
-                ))}
+        <section className="admin-card">
+          <div className="admin-card-header">
+            <h2>Case Files</h2>
+          </div>
+          <div className="admin-card-body">
+            <div className="admin-content-stack">
+              <div className="admin-summary-grid">
+                <div className="admin-summary-card">
+                  <span>Total case files</span>
+                  <strong>{totalCases}</strong>
+                </div>
+                <div className="admin-summary-card">
+                  <span>Active</span>
+                  <strong>{activeCases}</strong>
+                </div>
+                <div className="admin-summary-card">
+                  <span>Closed</span>
+                  <strong>{closedCases}</strong>
+                </div>
+                <div className="admin-summary-card">
+                  <span>Unknown status</span>
+                  <strong>{unknownCases}</strong>
+                </div>
               </div>
-            </div>
-          </section>
-        )}
 
-        {court.cases && court.cases.length > 0 && (
-          <section className="admin-card">
-            <div className="admin-card-header">
-              <h2>Cases</h2>
-            </div>
-            <div className="admin-card-body">
-              <div className="admin-table-wrap">
-                <table className="admin-table compact">
-                  <thead>
-                    <tr>
-                      <th>Case ID</th>
-                      <th>Type</th>
-                      <th>Subtype</th>
-                      <th>Basis Type</th>
-                      <th>Filing Date</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {court.cases.map((item, index) => (
-                      <tr key={index}>
-                        <td className="admin-code">{item.id}</td>
-                        <td>{item.type}</td>
-                        <td>{item.subtype}</td>
-                        <td>{item.basisType}</td>
-                        <td>{item.filingDate}</td>
-                        <td>{item.status}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="admin-toolbar">
+                <div className="admin-toolbar-left">
+                  <label className="admin-form-field">
+                    <span>Search case files</span>
+                    <input
+                      className="admin-input"
+                      type="search"
+                      placeholder="Search case ID, type, or basis"
+                      value={caseSearch}
+                      onChange={(e) => setCaseSearch(e.target.value)}
+                    />
+                  </label>
+                  <label className="admin-form-field">
+                    <span>Status</span>
+                    <select
+                      className="admin-input"
+                      value={caseStatusFilter}
+                      onChange={(e) => setCaseStatusFilter(e.target.value)}
+                    >
+                      <option value="All">All</option>
+                      <option value="Active">Active</option>
+                      <option value="Closed">Closed</option>
+                      <option value="Unknown">Unknown</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div className="admin-toolbar-right">
+                  <div className="admin-toolbar-meta">
+                    Showing {caseShowingFrom}-{caseShowingTo} of {filteredCases.length} case files
+                  </div>
+                  <label className="admin-form-field admin-form-field-sm">
+                    <span>Rows</span>
+                    <select
+                      className="admin-input"
+                      value={casePageSize}
+                      onChange={(e) => setCasePageSize(Number(e.target.value))}
+                    >
+                      {CASE_PAGE_SIZE_OPTIONS.map((size) => (
+                        <option key={size} value={size}>
+                          {size} per page
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <button
+                    className="admin-btn ghost"
+                    type="button"
+                    onClick={resetCaseFilters}
+                    disabled={!hasCaseFilters && casePageSize === DEFAULT_CASE_PAGE_SIZE}
+                  >
+                    Reset filters
+                  </button>
+                </div>
               </div>
+
+              {totalCases === 0 ? (
+                <div className="admin-empty-inline">No case files recorded for this court.</div>
+              ) : filteredCases.length === 0 ? (
+                <div className="admin-empty-inline">
+                  No case files match the current filters.
+                </div>
+              ) : (
+                <>
+                  <div className="admin-table-wrap">
+                    <table className="admin-table compact">
+                      <thead>
+                        <tr>
+                          <th>Case ID</th>
+                          <th>Type</th>
+                          <th>Basis Type</th>
+                          <th>Filing Date</th>
+                          <th>Status</th>
+                          <th>Details</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {caseRows.map((item) => (
+                          <tr key={item.recordKey ?? item.id}>
+                            <td className="admin-code">{item.id}</td>
+                            <td>{item.type || "N/A"}</td>
+                            <td>{item.basisType || item.subtype || "N/A"}</td>
+                            <td>{item.filingDate || "N/A"}</td>
+                            <td>
+                              <span
+                                className={`admin-status-badge ${
+                                  item.status === "Active"
+                                    ? "active"
+                                    : item.status === "Closed"
+                                      ? "inactive"
+                                      : "neutral"
+                                }`}
+                              >
+                                {item.status}
+                              </span>
+                            </td>
+                            <td>
+                              {item.recordKey ? (
+                                <Link
+                                  className="admin-btn ghost"
+                                  to={`/dashboard/cases/${encodeURIComponent(item.recordKey)}`}
+                                >
+                                  View
+                                </Link>
+                              ) : (
+                                "N/A"
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="admin-pagination admin-pagination-inline">
+                    <span>
+                      Page {casePage} of {totalCasePages}
+                    </span>
+                    <div className="admin-pagination-group">
+                      <button
+                        className="admin-btn ghost"
+                        type="button"
+                        disabled={casePage === 1}
+                        onClick={() => setCasePage(1)}
+                      >
+                        First
+                      </button>
+                      <button
+                        className="admin-btn ghost"
+                        type="button"
+                        disabled={casePage === 1}
+                        onClick={() => setCasePage((prev) => Math.max(1, prev - 1))}
+                      >
+                        Previous
+                      </button>
+                      {visibleCasePages.map((pageNumber) => (
+                        <button
+                          key={pageNumber}
+                          className={`admin-btn ${pageNumber === casePage ? "secondary" : "ghost"}`}
+                          type="button"
+                          onClick={() => setCasePage(pageNumber)}
+                        >
+                          {pageNumber}
+                        </button>
+                      ))}
+                      <button
+                        className="admin-btn ghost"
+                        type="button"
+                        disabled={casePage === totalCasePages}
+                        onClick={() => setCasePage((prev) => Math.min(totalCasePages, prev + 1))}
+                      >
+                        Next
+                      </button>
+                      <button
+                        className="admin-btn ghost"
+                        type="button"
+                        disabled={casePage === totalCasePages}
+                        onClick={() => setCasePage(totalCasePages)}
+                      >
+                        Last
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
-          </section>
-        )}
+          </div>
+        </section>
       </div>
 
       <ConfirmDialog

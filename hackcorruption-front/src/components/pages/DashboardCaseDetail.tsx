@@ -36,9 +36,9 @@ export default function DashboardCaseDetail() {
   }, [id]);
 
   const handleDelete = async () => {
-    if (!caseItem) return;
+    if (!caseItem || !caseItem.can_delete) return;
     try {
-      await deleteCase(caseItem.id);
+      await deleteCase(caseItem.record_key);
       navigate("/dashboard/cases");
     } catch (err) {
       console.warn(err);
@@ -93,39 +93,52 @@ export default function DashboardCaseDetail() {
             </svg>
             Back to list
           </Link>
-          <Link className="admin-btn secondary" to={`/dashboard/cases/${encodeURIComponent(caseItem.id)}/edit`}>
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" aria-hidden="true">
-              <path
-                d="M4 20H8L19 9C20.105 7.895 20.105 6.105 19 5C17.895 3.895 16.105 3.895 15 5L4 16V20Z"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinejoin="round"
-              />
-              <path d="M13 7L17 11" stroke="currentColor" strokeWidth="1.6" />
-            </svg>
-            Edit
-          </Link>
-          <button className="admin-btn danger" type="button" onClick={() => setConfirmOpen(true)}>
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" aria-hidden="true">
-              <path
-                d="M6 6C8.5 4 15.5 4 18 6C21 8.5 21 15.5 18 18C15.5 20 8.5 20 6 18C3 15.5 3 8.5 6 6Z"
-                stroke="currentColor"
-                strokeWidth="1.6"
-              />
-              <path d="M12 7V12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
-          </button>
+          {caseItem.court_slug && (
+            <Link className="admin-btn ghost" to={`/dashboard/courts/${caseItem.court_slug}`}>
+              Court
+            </Link>
+          )}
+          {caseItem.can_edit && (
+            <Link className="admin-btn secondary" to={`/dashboard/cases/${encodeURIComponent(caseItem.record_key)}/edit`}>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" aria-hidden="true">
+                <path
+                  d="M4 20H8L19 9C20.105 7.895 20.105 6.105 19 5C17.895 3.895 16.105 3.895 15 5L4 16V20Z"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinejoin="round"
+                />
+                <path d="M13 7L17 11" stroke="currentColor" strokeWidth="1.6" />
+              </svg>
+              Edit
+            </Link>
+          )}
+          {caseItem.can_delete && (
+            <button className="admin-btn danger" type="button" onClick={() => setConfirmOpen(true)}>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" aria-hidden="true">
+                <path
+                  d="M6 6C8.5 4 15.5 4 18 6C21 8.5 21 15.5 18 18C15.5 20 8.5 20 6 18C3 15.5 3 8.5 6 6Z"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                />
+                <path d="M12 7V12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 
       <div className="admin-summary-grid">
         <div className="admin-summary-card">
-          <span>Case cost</span>
-          <strong>{formatNumber(caseItem.case_financials.case_cost, "EUR")}</strong>
+          <span>Source</span>
+          <strong>{caseItem.source === "court_file" ? "Court file" : "Registry"}</strong>
         </div>
         <div className="admin-summary-card">
-          <span>Total cost</span>
-          <strong>{formatNumber(caseItem.case_financials.total_case_cost, "EUR")}</strong>
+          <span>Status</span>
+          <strong>{caseItem.case_status ?? "N/A"}</strong>
+        </div>
+        <div className="admin-summary-card">
+          <span>Case cost</span>
+          <strong>{formatNumber(caseItem.case_financials.case_cost, "EUR")}</strong>
         </div>
         <div className="admin-summary-card">
           <span>Duration</span>
@@ -153,7 +166,7 @@ export default function DashboardCaseDetail() {
                 <strong>{caseItem.judge ?? "N/A"}</strong>
               </div>
               <div>
-                <span>Decision date</span>
+                <span>Date</span>
                 <strong>{caseItem.decision_date ?? "N/A"}</strong>
               </div>
               <div>
@@ -161,6 +174,10 @@ export default function DashboardCaseDetail() {
                 <strong>{caseItem.legal_area ?? "N/A"}</strong>
               </div>
               <div>
+                <span>Case status</span>
+                <strong>{caseItem.case_status ?? "N/A"}</strong>
+              </div>
+              <div className="admin-case-summary-block">
                 <span>Summary</span>
                 <strong>{caseItem.summary ?? "N/A"}</strong>
               </div>
@@ -284,7 +301,7 @@ export default function DashboardCaseDetail() {
       </div>
 
       <ConfirmDialog
-        open={confirmOpen}
+        open={confirmOpen && caseItem.can_delete}
         title="Delete case?"
         message={`This will permanently remove ${caseItem.id} and its details.`}
         confirmLabel="Delete"

@@ -60,7 +60,7 @@ export default function DashboardCourtCreate() {
         </div>
       </div>
 
-      <div className="admin-card" style={{ maxWidth: "600px" }}>
+      <div className="admin-card">
         <div className="admin-card-body">
           {error && (
             <div style={{ color: "#dc2626", marginBottom: "1rem", padding: "0.75rem", backgroundColor: "#fee2e2", borderRadius: "0.375rem" }}>

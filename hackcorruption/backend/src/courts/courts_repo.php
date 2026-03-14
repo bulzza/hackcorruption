@@ -250,7 +250,7 @@ function court_avg_cost_by_type_list(PDO $pdo, int $courtId): array
 function court_cases_list(PDO $pdo, int $courtId): array
 {
     $stmt = $pdo->prepare("
-        SELECT case_id, type, subtype, basis_type, filing_date, status
+        SELECT id, case_id, type, subtype, basis_type, filing_date, status
         FROM court_cases
         WHERE court_id = :id
         ORDER BY filing_date DESC, case_id ASC
@@ -262,6 +262,7 @@ function court_cases_list(PDO $pdo, int $courtId): array
     foreach ($rows as $r) {
         $out[] = [
             'id' => $r['case_id'] ?? '',
+            'recordKey' => isset($r['id']) ? 'courtcase-' . (string)$r['id'] : '',
             'type' => $r['type'] ?? '',
             'subtype' => $r['subtype'] ?? '',
             'basisType' => $r['basis_type'] ?? '',

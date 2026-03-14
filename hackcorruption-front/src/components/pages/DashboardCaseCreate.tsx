@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import CaseForm from "../cases/CaseForm";
-import { createCase, listCases } from "../../services/casesService";
+import { createCase, listDashboardCases } from "../../services/casesService";
 import type { CaseInput } from "../../services/casesService";
 
 export default function DashboardCaseCreate() {
@@ -11,7 +11,7 @@ export default function DashboardCaseCreate() {
 
   useEffect(() => {
     let mounted = true;
-    listCases()
+    listDashboardCases()
       .then((data) => {
         if (!mounted) return;
         setExistingIds(data.map((item) => item.id));
@@ -93,7 +93,7 @@ export default function DashboardCaseCreate() {
         onSave={async (payload) => {
           const created = await createCase(normalizePayload(payload));
           setExistingIds((prev) => (prev.includes(created.id) ? prev : [...prev, created.id]));
-          navigate(`/dashboard/cases/${encodeURIComponent(created.id)}`);
+          navigate(`/dashboard/cases/${encodeURIComponent(created.record_key)}`);
         }}
         onCancel={() => navigate("/dashboard/cases")}
       />

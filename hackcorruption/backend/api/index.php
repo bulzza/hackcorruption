@@ -26,6 +26,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
 
 // ---- continue normal app ----
 require_once __DIR__ . '/../src/response.php';
+require_once __DIR__ . '/../src/dashboard/dashboard.php'; // dashboard controllers
 require_once __DIR__ . '/../src/courts/courts.php'; // courts controllers
 require_once __DIR__ . '/../src/judges/judges.php'; // controllers (we created earlier)
 require_once __DIR__ . '/../src/cases/cases.php'; // cases controllers
@@ -52,6 +53,14 @@ $subPath = $pos !== false ? substr($path, $pos + strlen($apiBase)) : $path;
 $subPath = $subPath === '' ? '/' : $subPath;
 
 // ROUTES:
+
+// DASHBOARD ROUTES
+
+// GET /dashboard/summary
+if ($method === 'GET' && $subPath === '/dashboard/summary') {
+  dashboard_summary_controller();
+  exit;
+}
 
 // COURTS ROUTES
 

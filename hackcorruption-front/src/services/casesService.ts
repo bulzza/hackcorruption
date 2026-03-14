@@ -1,12 +1,18 @@
 import { API_BASE } from "./apiConfig";
 
 export type Case = {
+  record_key: string;
   id: string;
   court: string;
   judge: string | null;
   decision_date: string | null;
   legal_area: string | null;
   summary: string | null;
+  source: "registry" | "court_file";
+  court_slug: string | null;
+  case_status: string | null;
+  can_edit: boolean;
+  can_delete: boolean;
 };
 
 export type CaseDetailInfo = {
@@ -93,21 +99,21 @@ type ApiResponse<T> = {
 };
 
 type CaseRow = {
+  record_key?: string | null;
   id: string;
   court: string;
   judge: string | null;
   decision_date: string | null;
   legal_area: string | null;
   summary: string | null;
+  source?: "registry" | "court_file" | null;
+  court_slug?: string | null;
+  case_status?: string | null;
+  can_edit?: boolean | number | null;
+  can_delete?: boolean | number | null;
 };
 
-type CaseDetailResponse = {
-  id: string;
-  court: string;
-  judge: string | null;
-  decision_date: string | null;
-  legal_area: string | null;
-  summary: string | null;
+type CaseDetailResponse = CaseRow & {
   case_detail: CaseDetailInfo;
   case_financials?: CaseFinancials;
   case_insights?: CaseInsights;
@@ -121,21 +127,22 @@ const toNullableNumber = (value: number | string | null | undefined) => {
 };
 
 const mapCaseRow = (row: CaseRow): Case => ({
+  record_key: row.record_key ?? String(row.id ?? ""),
   id: String(row.id ?? ""),
   court: row.court ?? "",
   judge: row.judge ?? null,
   decision_date: row.decision_date ?? null,
   legal_area: row.legal_area ?? null,
   summary: row.summary ?? null,
+  source: row.source === "court_file" ? "court_file" : "registry",
+  court_slug: row.court_slug ?? null,
+  case_status: row.case_status ?? null,
+  can_edit: Number(row.can_edit ?? 1) === 1,
+  can_delete: Number(row.can_delete ?? 1) === 1,
 });
 
 const mapCaseDetail = (detail: CaseDetailResponse): CaseDetail => ({
-  id: detail.id,
-  court: detail.court,
-  judge: detail.judge,
-  decision_date: detail.decision_date,
-  legal_area: detail.legal_area,
-  summary: detail.summary,
+  ...mapCaseRow(detail),
   case_detail: {
     case_type: detail.case_detail?.case_type ?? null,
     case_subtype: detail.case_detail?.case_subtype ?? null,
@@ -177,6 +184,11 @@ const requestJson = async <T>(url: string, options: RequestInit = {}) => {
 
 export async function listCases(): Promise<Case[]> {
   const data = await requestJson<CaseRow[]>(`${API_BASE}/cases`);
+  return data.map(mapCaseRow);
+}
+
+export async function listDashboardCases(): Promise<Case[]> {
+  const data = await requestJson<CaseRow[]>(`${API_BASE}/cases?include_court_files=1`);
   return data.map(mapCaseRow);
 }
 

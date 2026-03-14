@@ -172,8 +172,8 @@ export default function CaseForm({
     setIsDirty(true);
   };
 
-  const isValidNumber = (value: string | number) =>
-    value !== "" && !Number.isNaN(Number(value));
+  const isValidNumber = (value: string | number | null) =>
+    value !== null && value !== "" && !Number.isNaN(Number(value));
 
   const validate = () => {
     const nextErrors: Record<string, string> = {};

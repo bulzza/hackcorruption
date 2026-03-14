@@ -1,6 +1,10 @@
 <?php
 // backend/src/db.php
 
+declare(strict_types=1);
+
+require_once __DIR__ . '/schema.php';
+
 function db(): PDO {
   static $pdo = null;
   if ($pdo) return $pdo;
@@ -15,6 +19,7 @@ function db(): PDO {
     PDO::ATTR_EMULATE_PREPARES => false,
   ]);
 
+  schema_bootstrap($pdo);
+
   return $pdo;
 }
-?>

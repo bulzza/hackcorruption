@@ -14,7 +14,8 @@ function cases_list_controller(): void
 {
     try {
         $pdo = db();
-        $cases = case_list($pdo);
+        $includeCourtFiles = isset($_GET['include_court_files']) && $_GET['include_court_files'] === '1';
+        $cases = case_list($pdo, $includeCourtFiles);
         json_response(['ok' => true, 'data' => $cases]);
     } catch (Throwable $e) {
         json_response(['ok' => false, 'error' => $e->getMessage()], 500);

@@ -1,4 +1,4 @@
-import { CaseItem } from "../../data/cases";
+import type { CaseItem } from "../../data/cases";
 
 export default function CaseHeader({ item }: { item: CaseItem }) {
   return (

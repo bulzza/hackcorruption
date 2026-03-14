@@ -1,7 +1,7 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import CaseForm from "../cases/CaseForm";
-import { getCaseById, listCases, updateCase } from "../../services/casesService";
+import { getCaseById, listDashboardCases, updateCase } from "../../services/casesService";
 import type { CaseDetail, CaseInput } from "../../services/casesService";
 
 export default function DashboardCaseEdit() {
@@ -18,7 +18,7 @@ export default function DashboardCaseEdit() {
       setLoading(false);
       return;
     }
-    Promise.all([getCaseById(id), listCases()])
+    Promise.all([getCaseById(id), listDashboardCases()])
       .then(([detail, list]) => {
         if (!mounted) return;
         setCaseItem(detail ?? null);
@@ -97,7 +97,7 @@ export default function DashboardCaseEdit() {
         <span aria-hidden="true">/</span>
         <Link to="/dashboard/cases">Cases</Link>
         <span aria-hidden="true">/</span>
-        <Link to={`/dashboard/cases/${encodeURIComponent(caseItem.id)}`}>{caseItem.id}</Link>
+        <Link to={`/dashboard/cases/${encodeURIComponent(caseItem.record_key)}`}>{caseItem.id}</Link>
         <span aria-hidden="true">/</span>
         <span>Edit</span>
       </nav>
@@ -114,15 +114,15 @@ export default function DashboardCaseEdit() {
         initialData={caseItem}
         existingIds={existingIds}
         onSave={async (payload) => {
-          const updated = await updateCase(caseItem.id, normalizePayload(payload));
+          const updated = await updateCase(caseItem.record_key, normalizePayload(payload));
           setCaseItem(updated);
           setExistingIds((prev) => {
             const filtered = prev.filter((item) => item !== caseItem.id);
             return filtered.includes(updated.id) ? filtered : [...filtered, updated.id];
           });
-          navigate(`/dashboard/cases/${encodeURIComponent(updated.id)}`);
+          navigate(`/dashboard/cases/${encodeURIComponent(updated.record_key)}`);
         }}
-        onCancel={() => navigate(`/dashboard/cases/${encodeURIComponent(caseItem.id)}`)}
+        onCancel={() => navigate(`/dashboard/cases/${encodeURIComponent(caseItem.record_key)}`)}
       />
     </div>
   );

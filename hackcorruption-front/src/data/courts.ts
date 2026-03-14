@@ -7,6 +7,7 @@ export type CourtMetric = {
 
 export type CourtCaseRow = {
   id: string;
+  recordKey?: string;
   type: string;
   subtype: string;
   basisType: string;

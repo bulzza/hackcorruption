@@ -55,7 +55,7 @@ export default function RepeatableEducation({ items, onChange, errorFor }: Repea
               <input
                 className="admin-input"
                 type="number"
-                value={item.year}
+                value={item.year ?? ""}
                 onChange={(e) => updateItem(index, { year: e.target.value })}
                 placeholder="YYYY"
               />

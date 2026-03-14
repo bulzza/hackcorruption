@@ -20,7 +20,10 @@ export default function PartnersMarquee() {
 
   return (
     <section className="partners-section">
-      <p className="partners-label">{t("partners_label")}</p>
+      <div className="expertise-heading">
+          <h2 className="expertise-title">{t("partners_label")}</h2>
+          <div className="expertise-line" aria-hidden="true"></div>
+        </div>
       <div className="marquee-container">
         <div className="marquee-content">
           {items}

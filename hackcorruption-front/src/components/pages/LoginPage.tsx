@@ -8,6 +8,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -74,35 +75,67 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="data-page">
-      <div className="container" style={{ paddingTop: "6rem", paddingBottom: "4rem", maxWidth: "480px" }}>
-        <h1 className="section-title large">{t("nav_login")}</h1>
+    <main className="data-page login-page-shell">
+      <div className="container login-page-container">
+        <section className="login-panel" aria-labelledby="login-title">
+          <div className="login-panel-header">
+            <h1 id="login-title" className="login-panel-title">
+              {t("nav_login")}
+            </h1>
+            <p className="login-panel-subtitle">Admin access only.</p>
+          </div>
 
-        <form className="contact-form" onSubmit={handleSubmit}>
-          {error && (
-            <div role="alert" style={{ color: "#b91c1c", fontSize: "0.95rem" }}>
-              {error}
+          <form className="login-form" onSubmit={handleSubmit}>
+            {error && (
+              <div role="alert" className="login-alert">
+                {error}
+              </div>
+            )}
+
+            <div className="form-group login-form-group">
+              <label className="form-label" htmlFor="login-email">
+                Email <span className="required-mark">*</span>
+              </label>
+              <input
+                id="login-email"
+                className="form-input login-form-input"
+                type="email"
+                name="email"
+                placeholder="Enter email"
+                required
+                autoComplete="email"
+              />
             </div>
-          )}
 
-          <div className="form-group">
-            <label className="form-label">
-              Email <span className="required-mark">*</span>
+            <div className="form-group login-form-group">
+              <label className="form-label" htmlFor="login-password">
+                Password <span className="required-mark">*</span>
+              </label>
+              <input
+                id="login-password"
+                className="form-input login-form-input"
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Enter password"
+                required
+                autoComplete="current-password"
+              />
+            </div>
+
+            <label className="login-toggle">
+              <input
+                type="checkbox"
+                checked={showPassword}
+                onChange={(event) => setShowPassword(event.target.checked)}
+              />
+              <span>Show password</span>
             </label>
-            <input className="form-input" type="email" name="email" required autoComplete="email" />
-          </div>
 
-          <div className="form-group">
-            <label className="form-label">
-              Password <span className="required-mark">*</span>
-            </label>
-            <input className="form-input" type="password" name="password" required autoComplete="current-password" />
-          </div>
-
-          <button type="submit" className="submit-btn" disabled={isSubmitting}>
-            {isSubmitting ? "Signing in..." : "Sign in"}
-          </button>
-        </form>
+            <button type="submit" className="submit-btn login-submit-btn" disabled={isSubmitting}>
+              {isSubmitting ? "Signing in..." : "Sign in"}
+            </button>
+          </form>
+        </section>
       </div>
     </main>
   );

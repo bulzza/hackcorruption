@@ -41,7 +41,7 @@ export default function App() {
   const isDashboard = location.pathname.startsWith("/dashboard");
 
   return (
-    <div id="app" className={isLanding ? "" : "light-theme"}>
+    <div id="app" className={isLanding ? "landing-theme" : "light-theme"}>
       {!isDashboard && <Header />}
 
       <Routes>

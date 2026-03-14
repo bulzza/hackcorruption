@@ -1,23 +1,20 @@
 import "./../../styles/landing.css";
-import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { useI18n } from "../../i18n/useI18n";
 import type { Lang } from "../../i18n/useI18n";
-import { useEffect, useRef, useState } from "react";
-import { AUTH_LOGOUT_URL, AUTH_ME_URL } from "../../services/apiConfig";
+import { useEffect, useState } from "react";
+import { AUTH_ME_URL } from "../../services/apiConfig";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   `nav-link${isActive ? " active" : ""}`;
 
 export default function Header() {
   const { lang, setLang, t } = useI18n();
-  const navigate = useNavigate();
   const location = useLocation();
   const isDataActive = location.pathname.startsWith("/data");
   const dataLinkClass = `nav-link${isDataActive ? " active" : ""}`;
 
   const [user, setUser] = useState<{ id: number; full_name?: string; email?: string } | null>(null);
-  const [open, setOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const set = (l: Lang) => (e: React.MouseEvent) => {
     e.preventDefault();
@@ -35,28 +32,6 @@ export default function Header() {
       .catch(() => {});
     return () => { mounted = false };
   }, []);
-
-  useEffect(() => {
-    const onDoc = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('click', onDoc);
-    return () => document.removeEventListener('click', onDoc);
-  }, []);
-
-  const logout = async () => {
-    try {
-      await fetch(AUTH_LOGOUT_URL, { method: 'POST', credentials: 'include' });
-    } catch (e) {
-      console.warn('logout failed', e);
-    }
-    try {
-      localStorage.setItem("hc_auth_state", "logged_out");
-    } catch {}
-    setUser(null);
-    console.log('navigating to login');
-    navigate('/login');
-  };
 
   return (
     <header className="header">

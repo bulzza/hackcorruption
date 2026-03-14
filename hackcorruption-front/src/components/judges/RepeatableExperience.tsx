@@ -62,7 +62,7 @@ export default function RepeatableExperience({ items, onChange, errorFor }: Repe
               <input
                 className="admin-input"
                 type="number"
-                value={item.start_year}
+                value={item.start_year ?? ""}
                 onChange={(e) => updateItem(index, { start_year: e.target.value })}
                 placeholder="YYYY"
               />
@@ -77,7 +77,7 @@ export default function RepeatableExperience({ items, onChange, errorFor }: Repe
               <input
                 className="admin-input"
                 type="number"
-                value={item.end_year}
+                value={item.end_year ?? ""}
                 onChange={(e) => updateItem(index, { end_year: e.target.value })}
                 placeholder="YYYY"
                 disabled={item.is_current}

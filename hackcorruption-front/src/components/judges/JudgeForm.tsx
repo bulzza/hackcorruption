@@ -384,7 +384,7 @@ export default function JudgeForm({
                 <input
                   className="admin-input"
                   type="number"
-                  value={form.year_of_election}
+                  value={form.year_of_election ?? ""}
                   onChange={(e) => handleBasicChange("year_of_election", e.target.value)}
                   placeholder="YYYY"
                 />

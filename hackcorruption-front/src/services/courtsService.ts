@@ -68,6 +68,7 @@ type CourtMetricRow = {
 
 type CourtCaseRowResponse = {
   id: string;
+  recordKey?: string | null;
   type?: string | null;
   subtype?: string | null;
   basisType?: string | null;
@@ -137,6 +138,7 @@ const normalizeCaseStatus = (value?: string | null): CourtCaseRow["status"] => {
 const mapCases = (items: CourtCaseRowResponse[] | null | undefined): CourtCaseRow[] =>
   (items ?? []).map((item) => ({
     id: item.id ?? "",
+    recordKey: item.recordKey ?? undefined,
     type: item.type ?? "",
     subtype: item.subtype ?? "",
     basisType: item.basisType ?? "",
