@@ -23,6 +23,11 @@ export type TKey =
   | "newsletter_desc"
   | "newsletter_placeholder"
   | "newsletter_btn"
+  | "footer_about_heading"
+  | "footer_about_text"
+  | "footer_nav_heading"
+  | "footer_follow_heading"
+  | "footer_link_home"
   | "footer_rights"
   | "expertise_title"
   | "expertise_1_title"
@@ -260,6 +265,12 @@ export const translations: Record<Lang, Record<TKey, string>> = {
     newsletter_desc: "Stay updated with the latest legal data insights.",
     newsletter_placeholder: "Enter your email",
     newsletter_btn: "Subscribe",
+    footer_about_heading: "About JusticiaAI",
+    footer_about_text:
+      "JusticiaAI turns judicial and legal information into clear, accessible insights that support transparency, efficiency, and better decision-making.",
+    footer_nav_heading: "Navigation",
+    footer_follow_heading: "Follow us",
+    footer_link_home: "Home",
     footer_rights: "© 2026 JusticiaAI. All rights reserved.",
     expertise_title: "Areas of Expertise",
     expertise_1_title: "Case Documentation",
@@ -514,6 +525,12 @@ export const translations: Record<Lang, Record<TKey, string>> = {
     newsletter_desc: "Биди во тек со најновите правни увиди.",
     newsletter_placeholder: "Внеси е-пошта",
     newsletter_btn: "Претплати се",
+    footer_about_heading: "За JusticiaAI",
+    footer_about_text:
+      "JusticiaAI ги претвора судските и правните информации во јасни и достапни увиди што поддржуваат транспарентност, ефикасност и подобро одлучување.",
+    footer_nav_heading: "Навигација",
+    footer_follow_heading: "Следете нè",
+    footer_link_home: "Почетна",
     footer_rights: "© 2026 JusticiaAI. Сите права задржани.",
     expertise_title: "Области на експертиза",
     expertise_1_title: "Документација на предмети",
@@ -768,6 +785,12 @@ export const translations: Record<Lang, Record<TKey, string>> = {
     newsletter_desc: "Qëndro i përditësuar me njohuritë më të reja ligjore.",
     newsletter_placeholder: "Shkruaj email-in",
     newsletter_btn: "Abonohu",
+    footer_about_heading: "Rreth JusticiaAI",
+    footer_about_text:
+      "JusticiaAI i kthen të dhënat gjyqësore dhe ligjore në njohuri të qarta dhe të qasshme që mbështesin transparencën, efikasitetin dhe vendimmarrjen më të mirë.",
+    footer_nav_heading: "Navigimi",
+    footer_follow_heading: "Na ndiqni",
+    footer_link_home: "Ballina",
     footer_rights: "© 2026 JusticiaAI. Të gjitha të drejtat e rezervuara.",
     expertise_title: "Fushat e ekspertizës",
     expertise_1_title: "Dokumentimi i rasteve",

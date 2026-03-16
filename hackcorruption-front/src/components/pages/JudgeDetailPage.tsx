@@ -215,7 +215,7 @@ export default function JudgeDetailPage() {
       <section className="judge-header-section" style={{ marginTop: "0", paddingTop: "0.5rem" }}>
         <div className="container judge-profile-grid">
           <div className="judge-info">
-            <h1>{"\u0421\u0443\u0434\u0438\u0458\u0430"} {judge.name}</h1>
+            <h1>{judge.name}</h1>
             <div className="judge-role">{judge.role}</div>
 
             <div className="judge-detail-row">

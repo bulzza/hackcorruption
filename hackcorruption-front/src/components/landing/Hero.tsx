@@ -30,9 +30,6 @@ export default function Hero() {
               {t("btn_get_insights")}
             </a>
 
-            <a href="#features" className="btn hero-btn hero-btn-secondary">
-              Learn More
-            </a>
           </div>
         </div>
       </div>

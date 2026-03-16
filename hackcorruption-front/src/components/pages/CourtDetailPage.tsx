@@ -228,9 +228,11 @@ export default function CourtDetailPage() {
 
   if (!court && fetchState === "loading") {
     return (
-      <main className="data-page">
-        <div className="container" style={{ paddingTop: "8rem", paddingBottom: "3rem" }}>
-          <h1 className="section-title large">{t("court_detail_loading")}</h1>
+      <main className="court-profile-main">
+        <div className="container court-detail-state-wrap">
+          <div className="court-detail-state-card">
+            <h1 className="court-detail-state-title">{t("court_detail_loading")}</h1>
+          </div>
         </div>
       </main>
     );
@@ -238,12 +240,14 @@ export default function CourtDetailPage() {
 
   if (!court) {
     return (
-      <main className="data-page">
-        <div className="container" style={{ paddingTop: "8rem", paddingBottom: "3rem" }}>
-          <h1 className="section-title large">{t("court_detail_not_found")}</h1>
-          <Link to="/data/courts" style={{ color: "#3b82f6", textDecoration: "none" }}>
-            &larr; {t("court_detail_back")}
-          </Link>
+      <main className="court-profile-main">
+        <div className="container court-detail-state-wrap">
+          <div className="court-detail-state-card">
+            <h1 className="court-detail-state-title">{t("court_detail_not_found")}</h1>
+            <Link className="court-back-link" to="/data/courts">
+              &larr; {t("court_detail_back")}
+            </Link>
+          </div>
         </div>
       </main>
     );

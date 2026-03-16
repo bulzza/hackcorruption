@@ -89,10 +89,10 @@ export default function CourtsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
-  const [courtName, setCourtName] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [jurisdictionFilter, setJurisdictionFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | CourtStatus>("all");
+  const [courtName] = useState("");
+  const [typeFilter] = useState("all");
+  const [jurisdictionFilter] = useState("all");
+  const [statusFilter] = useState<"all" | CourtStatus>("all");
   const [sortBy, setSortBy] = useState("name-asc");
   const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(6);
   const [page, setPage] = useState(1);
@@ -122,19 +122,6 @@ export default function CourtsPage() {
     };
   }, []);
 
-  const typeOptions = useMemo(
-    () => Array.from(new Set(courts.map((court) => court.type).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
-    [courts]
-  );
-
-  const jurisdictionOptions = useMemo(
-    () =>
-      Array.from(new Set(courts.map((court) => court.jurisdiction).filter(Boolean))).sort((a, b) =>
-        a.localeCompare(b)
-      ),
-    [courts]
-  );
-
   const filteredCourts = useMemo(() => {
     const query = deferredSearch.trim().toLowerCase();
     const nameQuery = courtName.trim().toLowerCase();
@@ -161,35 +148,15 @@ export default function CourtsPage() {
   const totalPages = Math.max(1, Math.ceil(filteredCourts.length / pageSize));
   const currentPage = clampPage(page, totalPages);
   const pageWindow = buildPageWindow(currentPage, totalPages);
-  const showingFrom = filteredCourts.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-  const showingTo = Math.min(currentPage * pageSize, filteredCourts.length);
-  const paginatedCourts = filteredCourts.slice(showingFrom === 0 ? 0 : showingFrom - 1, showingTo);
+  const pageStart = (currentPage - 1) * pageSize;
+  const pageEnd = Math.min(currentPage * pageSize, filteredCourts.length);
+  const paginatedCourts = filteredCourts.slice(pageStart, pageEnd);
 
   const getStatusLabel = (status: CourtStatus) =>
     status === "Active" ? t("status_active") : t("status_inactive");
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
-    setPage(1);
-  };
-
-  const handleCourtNameChange = (value: string) => {
-    setCourtName(value);
-    setPage(1);
-  };
-
-  const handleTypeFilterChange = (value: string) => {
-    setTypeFilter(value);
-    setPage(1);
-  };
-
-  const handleJurisdictionFilterChange = (value: string) => {
-    setJurisdictionFilter(value);
-    setPage(1);
-  };
-
-  const handleStatusFilterChange = (value: "all" | CourtStatus) => {
-    setStatusFilter(value);
     setPage(1);
   };
 
@@ -200,16 +167,6 @@ export default function CourtsPage() {
 
   const handlePageSizeChange = (value: (typeof PAGE_SIZE_OPTIONS)[number]) => {
     setPageSize(value);
-    setPage(1);
-  };
-
-  const resetFilters = () => {
-    setSearch("");
-    setCourtName("");
-    setTypeFilter("all");
-    setJurisdictionFilter("all");
-    setStatusFilter("all");
-    setSortBy("name-asc");
     setPage(1);
   };
 
@@ -227,14 +184,14 @@ export default function CourtsPage() {
         </NavLink>
       </div>
 
-      <section className="courts-hero-section">
-        <div className="container courts-hero-frame">
-          <div className="courts-hero-search-card">
-            <label className="courts-search-label" htmlFor="courts-search">
+      <section className="directory-head-section">
+        <div className="container directory-head-layout search-only">
+          <div className="directory-topbar">
+            <label className="directory-search-label" htmlFor="courts-search">
               {t("court_directory_search_label")}
             </label>
-            <div className="courts-search-input-wrap">
-              <span className="courts-search-icon" aria-hidden="true">
+            <div className="directory-search-input-wrap">
+              <span className="directory-search-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none">
                   <path
                     d="M21 21L16.65 16.65M18 11C18 14.866 14.866 18 11 18C7.134 18 4 14.866 4 11C4 7.134 7.134 4 11 4C14.866 4 18 7.134 18 11Z"
@@ -247,20 +204,20 @@ export default function CourtsPage() {
               </span>
               <input
                 id="courts-search"
-                className="courts-search-input"
+                className="directory-search-input"
                 type="text"
                 placeholder={t("court_directory_search_placeholder")}
                 value={search}
                 onChange={(event) => handleSearchChange(event.target.value)}
               />
               {search ? (
-                <button className="courts-search-clear" type="button" onClick={() => handleSearchChange("")}>
+                <button className="directory-subtle-btn directory-search-clear-btn" type="button" onClick={() => handleSearchChange("")}>
                   {t("court_directory_reset")}
                 </button>
               ) : null}
             </div>
 
-            <div className="courts-search-meta">
+            <div className="directory-search-meta">
               <span>
                 {loading
                   ? t("court_directory_loading_directory")
@@ -268,27 +225,23 @@ export default function CourtsPage() {
               </span>
             </div>
           </div>
-        </div>
-      </section>
 
-      <section className="courts-directory-section">
-        <div className="container courts-directory-layout">
-          <aside className="courts-filter-panel">
-            <div className="courts-filter-panel-header">
+          {/* <aside className="directory-filter-panel directory-filter-panel-inline">
+            <div className="directory-filter-panel-header">
               <div>
-                <p className="courts-filter-eyebrow">{t("court_directory_filter_eyebrow")}</p>
-                <h2 className="courts-filter-title">{t("court_directory_refine_results")}</h2>
+                <p className="directory-filter-eyebrow">{t("court_directory_filter_eyebrow")}</p>
+                <h2 className="directory-filter-title">{t("court_directory_refine_results")}</h2>
               </div>
-              <button className="courts-filter-reset" type="button" onClick={resetFilters}>
+              <button className="directory-subtle-btn" type="button" onClick={resetFilters}>
                 {t("court_directory_reset")}
               </button>
             </div>
 
-            <div className="courts-filter-stack">
-              <label className="courts-field">
+            <div className="directory-filter-stack">
+              <label className="directory-field">
                 <span>{t("court_directory_court_name")}</span>
                 <input
-                  className="courts-field-input"
+                  className="directory-field-input"
                   type="text"
                   placeholder={t("court_directory_court_name_placeholder")}
                   value={courtName}
@@ -296,10 +249,10 @@ export default function CourtsPage() {
                 />
               </label>
 
-              <label className="courts-field">
+              <label className="directory-field">
                 <span>{t("court_directory_court_type")}</span>
                 <select
-                  className="courts-field-input"
+                  className="directory-field-input"
                   value={typeFilter}
                   onChange={(event) => handleTypeFilterChange(event.target.value)}
                 >
@@ -312,10 +265,10 @@ export default function CourtsPage() {
                 </select>
               </label>
 
-              <label className="courts-field">
+              <label className="directory-field">
                 <span>{t("court_directory_jurisdiction")}</span>
                 <select
-                  className="courts-field-input"
+                  className="directory-field-input"
                   value={jurisdictionFilter}
                   onChange={(event) => handleJurisdictionFilterChange(event.target.value)}
                 >
@@ -328,10 +281,10 @@ export default function CourtsPage() {
                 </select>
               </label>
 
-              <label className="courts-field">
+              <label className="directory-field">
                 <span>{t("court_directory_status")}</span>
                 <select
-                  className="courts-field-input"
+                  className="directory-field-input"
                   value={statusFilter}
                   onChange={(event) => handleStatusFilterChange(event.target.value as "all" | CourtStatus)}
                 >
@@ -341,20 +294,16 @@ export default function CourtsPage() {
                 </select>
               </label>
             </div>
-          </aside>
+          </aside> */}
+        </div>
+      </section>
 
-          <div className="courts-results-panel">
-            <div className="courts-results-toolbar">
-              <div>
-                <h2 className="courts-results-title">
-                  {loading
-                    ? t("court_directory_preparing_records")
-                    : `${t("court_directory_showing_results")} ${showingFrom}-${showingTo} ${t("court_directory_of")} ${filteredCourts.length}`}
-                </h2>
-              </div>
-
-              <div className="courts-results-controls">
-                <label className="courts-inline-control">
+      <section className="directory-content-section">
+        <div className="container">
+          <div className="directory-results-panel">
+            <div className="directory-results-toolbar  directory-results-toolbar-spaced">
+              <div className="directory-results-controls">
+                <label className="directory-inline-control">
                   <span>{t("court_directory_sort")}</span>
                   <select value={sortBy} onChange={(event) => handleSortChange(event.target.value)}>
                     <option value="name-asc">{t("court_directory_sort_name_asc")}</option>
@@ -364,7 +313,7 @@ export default function CourtsPage() {
                   </select>
                 </label>
 
-                <label className="courts-inline-control">
+                <label className="directory-inline-control">
                   <span>{t("court_directory_per_page")}</span>
                   <select
                     value={pageSize}
@@ -383,25 +332,29 @@ export default function CourtsPage() {
             </div>
 
             {loading ? (
-              <div className="courts-feedback-card">
+              <div className="directory-feedback-card">
                 <h3>{t("court_directory_loading_title")}</h3>
                 <p>{t("court_directory_loading_desc")}</p>
               </div>
             ) : error ? (
-              <div className="courts-feedback-card error">
+              <div className="directory-feedback-card error">
                 <h3>{t("court_directory_error_title")}</h3>
                 <p>{error}</p>
               </div>
             ) : filteredCourts.length === 0 ? (
-              <div className="courts-feedback-card">
+              <div className="directory-feedback-card">
                 <h3>{t("court_directory_empty_title")}</h3>
                 <p>{t("court_directory_empty_desc")}</p>
               </div>
             ) : (
               <>
-                <div className="courts-directory-grid">
+                <div className="directory-card-grid courts-directory-grid">
                   {paginatedCourts.map((court) => (
-                    <article className="court-directory-card" key={court.slug}>
+                    <Link
+                      className="directory-card directory-card-link court-directory-card"
+                      key={court.slug}
+                      to={`/data/courts/${encodeURIComponent(court.slug)}`}
+                    >
                       <div className="court-directory-card-top">
                         <span className="court-directory-tag">{court.type}</span>
                         <span className={`court-directory-status ${court.status.toLowerCase()}`}>
@@ -409,9 +362,7 @@ export default function CourtsPage() {
                         </span>
                       </div>
 
-                      <Link className="court-directory-name" to={`/data/courts/${encodeURIComponent(court.slug)}`}>
-                        {court.name}
-                      </Link>
+                      <h3 className="court-directory-name">{court.name}</h3>
 
                       <p className="court-directory-summary">{court.jurisdiction}</p>
 
@@ -460,29 +411,13 @@ export default function CourtsPage() {
                           <span>{court.websiteLabel || t("court_directory_no_website")}</span>
                         </div>
                       </div>
-
-                      <div className="court-directory-actions">
-                        <Link className="court-directory-primary" to={`/data/courts/${encodeURIComponent(court.slug)}`}>
-                          {t("court_directory_open_profile")}
-                        </Link>
-                        {court.website ? (
-                          <a
-                            className="court-directory-secondary"
-                            href={court.website}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            {t("court_directory_official_site")}
-                          </a>
-                        ) : null}
-                      </div>
-                    </article>
+                    </Link>
                   ))}
                 </div>
 
-                <div className="courts-pagination" aria-label="Courts pagination">
+                <div className="directory-pagination" aria-label="Courts pagination">
                   <button
-                    className="courts-pagination-btn"
+                    className="directory-pagination-btn"
                     type="button"
                     onClick={() => setPage((value) => Math.max(value - 1, 1))}
                     disabled={currentPage === 1}
@@ -490,11 +425,11 @@ export default function CourtsPage() {
                     {t("pagination_previous")}
                   </button>
 
-                  <div className="courts-pagination-pages">
+                  <div className="directory-pagination-pages">
                     {pageWindow.map((pageNumber) => (
                       <button
                         key={pageNumber}
-                        className={`courts-pagination-page ${pageNumber === currentPage ? "active" : ""}`}
+                        className={`directory-pagination-page ${pageNumber === currentPage ? "active" : ""}`}
                         type="button"
                         onClick={() => setPage(pageNumber)}
                       >
@@ -504,7 +439,7 @@ export default function CourtsPage() {
                   </div>
 
                   <button
-                    className="courts-pagination-btn"
+                    className="directory-pagination-btn"
                     type="button"
                     onClick={() => setPage((value) => Math.min(value + 1, totalPages))}
                     disabled={currentPage === totalPages}

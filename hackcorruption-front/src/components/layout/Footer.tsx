@@ -1,4 +1,5 @@
 import "./../../styles/landing.css";
+import { Link } from "react-router-dom";
 import { useI18n } from "../../i18n/useI18n";
 
 export default function Footer() {
@@ -8,52 +9,66 @@ export default function Footer() {
     <footer className="footer">
       <div className="container footer-content">
         <div className="footer-column footer-about">
-          <h3 className="footer-heading">ABOUT JUSTICIAAI</h3>
-          <p className="footer-text">
-            JusticiaAI helps transform judicial and legal information into clear,
-            accessible, and meaningful insights for transparency, efficiency,
-            and better decision-making.
-          </p>
+          <h3 className="footer-heading">{t("footer_about_heading")}</h3>
+          <p className="footer-text">{t("footer_about_text")}</p>
         </div>
 
         <div className="footer-column footer-nav">
-          <h3 className="footer-heading">NAVIGATION</h3>
+          <h3 className="footer-heading">{t("footer_nav_heading")}</h3>
           <div className="footer-links-grid">
-            <a href="#" className="footer-link">Home</a>
-            <a href="#" className="footer-link">About Us</a>
-            <a href="#" className="footer-link">Practice Area</a>
-            <a href="#" className="footer-link">Privacy Policy</a>
-            <a href="#" className="footer-link">Case Studies</a>
-            <a href="#" className="footer-link">Contact Us</a>
-            <a href="#" className="footer-link">Careers</a>
-            <a href="#" className="footer-link">Membership</a>
+            <Link to="/" className="footer-link">
+              {t("footer_link_home")}
+            </Link>
+            <Link to="/" className="footer-link">
+              {t("nav_about")}
+            </Link>
+            <Link to="/data/courts" className="footer-link">
+              {t("nav_data")}
+            </Link>
+            <a href="/#expertise" className="footer-link">
+              {t("expertise_title")}
+            </a>
+            <Link to="/research" className="footer-link">
+              {t("nav_research")}
+            </Link>
+            <Link to="/contact" className="footer-link">
+              {t("nav_contact")}
+            </Link>
+            <Link to="/login" className="footer-link">
+              {t("nav_login")}
+            </Link>
           </div>
         </div>
 
         <div className="footer-column footer-connect">
-          <h3 className="footer-heading">SUBSCRIBE</h3>
+          <h3 className="footer-heading">{t("newsletter_title")}</h3>
 
-          <form className="newsletter-form">
+          <form
+            className="newsletter-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+            }}
+          >
             <input
               type="email"
               className="newsletter-input"
-              placeholder="Enter your email"
+              placeholder={t("newsletter_placeholder")}
             />
             <button type="submit" className="btn footer-subscribe-btn">
-              Subscribe
+              {t("newsletter_btn")}
             </button>
           </form>
 
           <div className="footer-social-block">
-            <h3 className="footer-heading footer-heading-small">FOLLOW US</h3>
+            <h3 className="footer-heading footer-heading-small">{t("footer_follow_heading")}</h3>
             <div className="social-icons">
-              <a className="social-link" href="#" aria-label="Facebook">
+              <a className="social-link" href="https://www.facebook.com" target="_blank" rel="noreferrer" aria-label="Facebook">
                 Facebook
               </a>
-              <a className="social-link" href="#" aria-label="Twitter">
-                Twitter
+              <a className="social-link" href="https://x.com" target="_blank" rel="noreferrer" aria-label="X">
+                X
               </a>
-              <a className="social-link" href="#" aria-label="Instagram">
+              <a className="social-link" href="https://www.instagram.com" target="_blank" rel="noreferrer" aria-label="Instagram">
                 Instagram
               </a>
             </div>
@@ -62,7 +77,7 @@ export default function Footer() {
       </div>
 
       <div className="container footer-bottom">
-        <a href="#" className="footer-logo">JusticiaAI</a>
+        <Link to="/" className="footer-logo">JusticiaAI</Link>
         <div className="copyright">{t("footer_rights")}</div>
       </div>
     </footer>

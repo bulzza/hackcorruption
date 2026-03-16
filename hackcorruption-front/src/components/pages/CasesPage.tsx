@@ -97,12 +97,12 @@ export default function CasesPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
-  const [courtFilter, setCourtFilter] = useState("");
-  const [judgeFilter, setJudgeFilter] = useState("");
-  const [legalAreaFilter, setLegalAreaFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [courtFilter] = useState("");
+  const [judgeFilter] = useState("");
+  const [legalAreaFilter] = useState("all");
+  const [statusFilter] = useState("all");
+  const [dateFrom] = useState("");
+  const [dateTo] = useState("");
   const [sortBy, setSortBy] = useState("recent");
   const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(12);
   const [page, setPage] = useState(1);
@@ -131,11 +131,6 @@ export default function CasesPage() {
       mounted = false;
     };
   }, []);
-
-  const legalAreaOptions = useMemo(
-    () => Array.from(new Set(cases.map((item) => item.legalArea).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
-    [cases]
-  );
 
   const filteredCases = useMemo(() => {
     const query = deferredSearch.trim().toLowerCase();
@@ -190,9 +185,9 @@ export default function CasesPage() {
   const totalPages = Math.max(1, Math.ceil(visibleCases.length / pageSize));
   const currentPage = clampPage(page, totalPages);
   const pageWindow = buildPageWindow(currentPage, totalPages);
-  const showingFrom = visibleCases.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-  const showingTo = Math.min(currentPage * pageSize, visibleCases.length);
-  const paginatedCases = visibleCases.slice(showingFrom === 0 ? 0 : showingFrom - 1, showingTo);
+  const pageStart = (currentPage - 1) * pageSize;
+  const pageEnd = Math.min(currentPage * pageSize, visibleCases.length);
+  const paginatedCases = visibleCases.slice(pageStart, pageEnd);
 
   const getStatusLabel = (status: string) => {
     if (status === "Active") return t("status_active");
@@ -203,18 +198,6 @@ export default function CasesPage() {
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
-    setPage(1);
-  };
-
-  const resetFilters = () => {
-    setSearch("");
-    setCourtFilter("");
-    setJudgeFilter("");
-    setLegalAreaFilter("all");
-    setStatusFilter("all");
-    setDateFrom("");
-    setDateTo("");
-    setSortBy("recent");
     setPage(1);
   };
 
@@ -232,48 +215,44 @@ export default function CasesPage() {
         </NavLink>
       </div>
 
-      <section className="directory-topbar-section">
-        <div className="container directory-topbar">
-          <label className="directory-search-label" htmlFor="cases-search">
-            {t("case_directory_search_label")}
-          </label>
-          <div className="directory-search-input-wrap">
-            <span className="directory-search-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M21 21L16.65 16.65M18 11C18 14.866 14.866 18 11 18C7.134 18 4 14.866 4 11C4 7.134 7.134 4 11 4C14.866 4 18 7.134 18 11Z"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </span>
-            <input
-              id="cases-search"
-              className="directory-search-input"
-              type="text"
-              placeholder={t("case_directory_search_placeholder")}
-              value={search}
-              onChange={(event) => handleSearchChange(event.target.value)}
-            />
+      <section className="directory-head-section">
+        <div className="container directory-head-layout search-only">
+          <div className="directory-topbar">
+            <label className="directory-search-label" htmlFor="cases-search">
+              {t("case_directory_search_label")}
+            </label>
+            <div className="directory-search-input-wrap">
+              <span className="directory-search-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M21 21L16.65 16.65M18 11C18 14.866 14.866 18 11 18C7.134 18 4 14.866 4 11C4 7.134 7.134 4 11 4C14.866 4 18 7.134 18 11Z"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+              <input
+                id="cases-search"
+                className="directory-search-input"
+                type="text"
+                placeholder={t("case_directory_search_placeholder")}
+                value={search}
+                onChange={(event) => handleSearchChange(event.target.value)}
+              />
+            </div>
+            <div className="directory-search-meta">
+              <span>
+                {loading
+                  ? t("case_directory_loading_directory")
+                  : `${visibleCases.length} ${t("case_directory_matching_records")}`}
+              </span>
+              
+            </div>
           </div>
-          <div className="directory-search-meta">
-            <span>
-              {loading
-                ? t("case_directory_loading_directory")
-                : `${visibleCases.length} ${t("case_directory_matching_records")}`}
-            </span>
-            {!hasScopedSearch && !loading ? (
-              <span>{t("case_directory_recent_limit_note")}</span>
-            ) : null}
-          </div>
-        </div>
-      </section>
 
-      <section className="directory-content-section">
-        <div className="container directory-layout">
-          <aside className="directory-filter-panel">
+          {/* <aside className="directory-filter-panel directory-filter-panel-inline">
             <div className="directory-filter-panel-header">
               <div>
                 <p className="directory-filter-eyebrow">{t("case_directory_filter_eyebrow")}</p>
@@ -378,18 +357,14 @@ export default function CasesPage() {
                 </label>
               </div>
             </div>
-          </aside>
+          </aside> */}
+        </div>
+      </section>
 
+      <section className="directory-content-section">
+        <div className="container">
           <div className="directory-results-panel">
             <div className="directory-results-toolbar directory-results-toolbar-spaced">
-              <div>
-                <h2 className="directory-results-title">
-                  {loading
-                    ? t("case_directory_preparing_records")
-                    : `${t("case_directory_showing_results")} ${showingFrom}-${showingTo} ${t("case_directory_of")} ${visibleCases.length}`}
-                </h2>
-              </div>
-
               <div className="directory-results-controls">
                 <label className="directory-inline-control">
                   <span>{t("case_directory_sort")}</span>
@@ -446,7 +421,11 @@ export default function CasesPage() {
               <>
                 <div className="directory-card-grid cases-directory-grid">
                   {paginatedCases.map((item) => (
-                    <article className="directory-card case-directory-card" key={item.recordKey}>
+                    <Link
+                      className="directory-card directory-card-link case-directory-card"
+                      key={item.recordKey}
+                      to={`/data/cases/${encodeURIComponent(item.id)}`}
+                    >
                       <div className="case-directory-body">
                         <div className="case-directory-top">
                           <span className={`case-directory-status ${item.status.toLowerCase()}`}>
@@ -457,9 +436,7 @@ export default function CasesPage() {
                           </span>
                         </div>
 
-                        <Link className="directory-card-title" to={`/data/cases/${encodeURIComponent(item.id)}`}>
-                          {item.id}
-                        </Link>
+                        <h3 className="directory-card-title">{item.id}</h3>
 
                         <div className="case-directory-subtitle">
                           <span>{item.court || t("case_detail_not_provided")}</span>
@@ -476,14 +453,8 @@ export default function CasesPage() {
                             <span>{item.judge || t("case_detail_not_provided")}</span>
                           </div>
                         </div>
-
-                        <div className="directory-card-actions">
-                          <Link className="directory-primary-link" to={`/data/cases/${encodeURIComponent(item.id)}`}>
-                            {t("case_directory_open_case")}
-                          </Link>
-                        </div>
                       </div>
-                    </article>
+                    </Link>
                   ))}
                 </div>
 
