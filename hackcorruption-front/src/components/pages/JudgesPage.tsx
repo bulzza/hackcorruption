@@ -1,8 +1,11 @@
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import { useI18n } from "../../i18n/useI18n";
+import judgePlaceholder from "../../assets/judge_placeholder.png";
 import { listJudges } from "../../services/judgesService";
 import type { Judge } from "../../services/judgesService";
-import judgePlaceholder from "../../assets/judge_placeholder.png";
+
+const PAGE_SIZE_OPTIONS = [6, 9, 12] as const;
 
 const tabClass = ({ isActive }: { isActive: boolean }) => `tab-btn${isActive ? " active" : ""}`;
 
@@ -10,222 +13,423 @@ type JudgeCard = {
   id: string;
   name: string;
   role: string;
-  court: string;
-  electedOn: string;
-  yearOfElection: string;
   area: string;
+  yearOfElection: string;
   photo: string;
+  searchIndex: string;
 };
 
 const mapApiJudgeToCard = (judge: Judge): JudgeCard => {
-  const yearLabel = judge.year_of_election ? String(judge.year_of_election) : "Unknown";
+  const yearLabel = judge.year_of_election ? String(judge.year_of_election) : "";
+  const area = judge.area_of_work?.trim() || "";
+
   return {
     id: String(judge.id),
-    name: judge.full_name,
+    name: judge.full_name?.trim() || "Unnamed judge",
     role: "Judge",
-    court: judge.area_of_work ?? "Not specified",
-    electedOn: yearLabel,
+    area,
     yearOfElection: yearLabel,
-    area: judge.area_of_work ?? "Not specified",
     photo: judge.photoUrl ?? judgePlaceholder,
+    searchIndex: [judge.full_name, area, yearLabel].join(" ").toLowerCase(),
   };
 };
 
+const clampPage = (page: number, totalPages: number) => {
+  if (totalPages <= 0) return 1;
+  return Math.min(Math.max(page, 1), totalPages);
+};
+
+const buildPageWindow = (currentPage: number, totalPages: number) => {
+  if (totalPages <= 5) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const start = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
+  return Array.from({ length: 5 }, (_, index) => start + index);
+};
+
 export default function JudgesPage() {
-  const [apiJudges, setApiJudges] = useState<JudgeCard[]>([]);
+  const { t } = useI18n();
+  const [judges, setJudges] = useState<JudgeCard[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [search, setSearch] = useState("");
-  const [judgeFilter, setJudgeFilter] = useState("");
-  const [courtFilter, setCourtFilter] = useState("");
-  const [areaFilter, setAreaFilter] = useState("");
+  const [nameFilter, setNameFilter] = useState("");
+  const [areaFilter, setAreaFilter] = useState("all");
   const [yearFrom, setYearFrom] = useState("");
   const [yearTo, setYearTo] = useState("");
+  const [sortBy, setSortBy] = useState("name-asc");
+  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(6);
+  const [page, setPage] = useState(1);
+
+  const deferredSearch = useDeferredValue(search);
 
   useEffect(() => {
     let mounted = true;
+
     listJudges()
       .then((data) => {
         if (!mounted) return;
-        setApiJudges(data.map(mapApiJudgeToCard));
+        setJudges(data.map(mapApiJudgeToCard));
       })
       .catch((err) => {
+        if (!mounted) return;
         console.warn(err);
+        setError(err instanceof Error ? err.message : "Failed to load judges.");
+      })
+      .finally(() => {
+        if (!mounted) return;
+        setLoading(false);
       });
+
     return () => {
       mounted = false;
     };
   }, []);
 
+  const areaOptions = useMemo(
+    () => Array.from(new Set(judges.map((judge) => judge.area).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
+    [judges]
+  );
+
   const filteredJudges = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    const judgeQuery = judgeFilter.trim().toLowerCase();
-    const courtQuery = courtFilter.trim().toLowerCase();
-    const areaQuery = areaFilter.trim().toLowerCase();
+    const query = deferredSearch.trim().toLowerCase();
+    const normalizedName = nameFilter.trim().toLowerCase();
     const fromYear = Number(yearFrom);
     const toYear = Number(yearTo);
     const hasFrom = yearFrom.trim() !== "" && Number.isFinite(fromYear);
     const hasTo = yearTo.trim() !== "" && Number.isFinite(toYear);
 
-    return apiJudges.filter((judge) => {
-      const name = judge.name.toLowerCase();
-      const court = judge.court.toLowerCase();
-      const area = judge.area.toLowerCase();
-      const yearValue = Number(judge.yearOfElection);
+    const next = judges.filter((judge) => {
+      if (query && !judge.searchIndex.includes(query)) return false;
+      if (normalizedName && !judge.name.toLowerCase().includes(normalizedName)) return false;
+      if (areaFilter !== "all" && judge.area !== areaFilter) return false;
 
-      if (query) {
-        const matchesQuery =
-          name.includes(query) || court.includes(query) || area.includes(query);
-        if (!matchesQuery) return false;
-      }
-      if (judgeQuery && !name.includes(judgeQuery)) return false;
-      if (courtQuery && !court.includes(courtQuery)) return false;
-      if (areaQuery && !area.includes(areaQuery)) return false;
+      const yearValue = Number(judge.yearOfElection);
       if (hasFrom && (!Number.isFinite(yearValue) || yearValue < fromYear)) return false;
       if (hasTo && (!Number.isFinite(yearValue) || yearValue > toYear)) return false;
+
       return true;
     });
-  }, [apiJudges, search, judgeFilter, courtFilter, areaFilter, yearFrom, yearTo]);
+
+    next.sort((left, right) => {
+      if (sortBy === "name-desc") return right.name.localeCompare(left.name);
+      if (sortBy === "year-desc") return Number(right.yearOfElection || 0) - Number(left.yearOfElection || 0);
+      if (sortBy === "year-asc") return Number(left.yearOfElection || 0) - Number(right.yearOfElection || 0);
+      if (sortBy === "area") return left.area.localeCompare(right.area) || left.name.localeCompare(right.name);
+      return left.name.localeCompare(right.name);
+    });
+
+    return next;
+  }, [areaFilter, deferredSearch, judges, nameFilter, sortBy, yearFrom, yearTo]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredJudges.length / pageSize));
+  const currentPage = clampPage(page, totalPages);
+  const pageWindow = buildPageWindow(currentPage, totalPages);
+  const showingFrom = filteredJudges.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const showingTo = Math.min(currentPage * pageSize, filteredJudges.length);
+  const paginatedJudges = filteredJudges.slice(showingFrom === 0 ? 0 : showingFrom - 1, showingTo);
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
+
+  const handleNameChange = (value: string) => {
+    setNameFilter(value);
+    setPage(1);
+  };
+
+  const handleAreaChange = (value: string) => {
+    setAreaFilter(value);
+    setPage(1);
+  };
+
+  const handleYearFromChange = (value: string) => {
+    setYearFrom(value);
+    setPage(1);
+  };
+
+  const handleYearToChange = (value: string) => {
+    setYearTo(value);
+    setPage(1);
+  };
+
+  const handleSortChange = (value: string) => {
+    setSortBy(value);
+    setPage(1);
+  };
+
+  const handlePageSizeChange = (value: (typeof PAGE_SIZE_OPTIONS)[number]) => {
+    setPageSize(value);
+    setPage(1);
+  };
+
+  const resetFilters = () => {
+    setSearch("");
+    setNameFilter("");
+    setAreaFilter("all");
+    setYearFrom("");
+    setYearTo("");
+    setSortBy("name-asc");
+    setPage(1);
+  };
 
   return (
-    <main className="data-page">
+    <main className="data-page directory-page-shell">
       <div className="data-tabs">
         <NavLink to="/data/courts" end className={tabClass}>
-          Courts
+          {t("data_tab_courts")}
         </NavLink>
         <NavLink to="/data/judges" end className={tabClass}>
-          Judges
+          {t("data_tab_judges")}
         </NavLink>
         <NavLink to="/data/cases" end className={tabClass}>
-          Cases
+          {t("data_tab_cases")}
         </NavLink>
       </div>
 
-      <section className="search-header-section">
-        <div className="container">
-          <div className="search-bar-wrapper">
-            <span className="search-icon" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <section className="directory-topbar-section">
+        <div className="container directory-topbar">
+          <label className="directory-search-label" htmlFor="judges-search">
+            {t("judge_directory_search_label")}
+          </label>
+          <div className="directory-search-input-wrap">
+            <span className="directory-search-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
                 <path
                   d="M21 21L16.65 16.65M18 11C18 14.866 14.866 18 11 18C7.134 18 4 14.866 4 11C4 7.134 7.134 4 11 4C14.866 4 18 7.134 18 11Z"
                   stroke="currentColor"
-                  strokeWidth="2"
+                  strokeWidth="1.8"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
               </svg>
             </span>
             <input
-              className="search-input"
+              id="judges-search"
+              className="directory-search-input"
               type="text"
-              placeholder="Search judges..."
+              placeholder={t("judge_directory_search_placeholder")}
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(event) => handleSearchChange(event.target.value)}
             />
-            <button
-              className="clear-icon"
-              type="button"
-              aria-label="Clear search"
-              onClick={() => setSearch("")}
-            >
-              x
-            </button>
           </div>
-          <div className="results-bar">
-            <p className="results-count">{filteredJudges.length} results</p>
+          <div className="directory-search-meta">
+            <span>
+              {loading
+                ? t("judge_directory_loading_directory")
+                : `${filteredJudges.length} ${t("judge_directory_matching_records")}`}
+            </span>
           </div>
         </div>
       </section>
 
-      <div className="container search-layout" style={{ paddingTop: "2rem", paddingBottom: "4rem" }}>
-        <aside className="sidebar">
-          <div className="filter-group">
-            <div className="filter-header">
-              <span>Search Criteria</span>
-              <span className="arrow-up">^</span>
+      <section className="directory-content-section">
+        <div className="container directory-layout">
+          <aside className="directory-filter-panel">
+            <div className="directory-filter-panel-header">
+              <div>
+                <p className="directory-filter-eyebrow">{t("judge_directory_filter_eyebrow")}</p>
+                <h2 className="directory-filter-title">{t("judge_directory_refine_results")}</h2>
+              </div>
+              <button className="directory-subtle-btn" type="button" onClick={resetFilters}>
+                {t("judge_directory_reset")}
+              </button>
             </div>
-            <div className="filter-content">
-              <div className="criteria-field">
-                <label className="criteria-label">Judge</label>
-                <input
-                  className="criteria-input"
-                  type="text"
-                  placeholder="Enter name..."
-                  value={judgeFilter}
-                  onChange={(e) => setJudgeFilter(e.target.value)}
-                />
-              </div>
 
-              <div className="criteria-field">
-                <label className="criteria-label">Court</label>
+            <div className="directory-filter-stack">
+              <label className="directory-field">
+                <span>{t("judge_directory_name")}</span>
                 <input
-                  className="criteria-input"
+                  className="directory-field-input"
                   type="text"
-                  placeholder="Enter court name..."
-                  value={courtFilter}
-                  onChange={(e) => setCourtFilter(e.target.value)}
+                  placeholder={t("judge_directory_name_placeholder")}
+                  value={nameFilter}
+                  onChange={(event) => handleNameChange(event.target.value)}
                 />
-              </div>
+              </label>
 
-              <div className="criteria-field">
-                <label className="criteria-label">Legal Area</label>
-                <input
-                  className="criteria-input"
-                  type="text"
-                  placeholder="e.g. Criminal Area"
+              <label className="directory-field">
+                <span>{t("judge_directory_area")}</span>
+                <select
+                  className="directory-field-input"
                   value={areaFilter}
-                  onChange={(e) => setAreaFilter(e.target.value)}
-                />
-              </div>
+                  onChange={(event) => handleAreaChange(event.target.value)}
+                >
+                  <option value="all">{t("judge_directory_all_areas")}</option>
+                  {areaOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-              <div className="criteria-field">
-                <label className="criteria-label">Year of Election</label>
-                <div style={{ display: "flex", gap: "1rem" }}>
+              <div className="directory-range-grid">
+                <label className="directory-field">
+                  <span>{t("judge_directory_year_from")}</span>
                   <input
-                    className="criteria-input"
+                    className="directory-field-input"
                     type="number"
                     placeholder="2010"
                     value={yearFrom}
-                    onChange={(e) => setYearFrom(e.target.value)}
+                    onChange={(event) => handleYearFromChange(event.target.value)}
                   />
+                </label>
+
+                <label className="directory-field">
+                  <span>{t("judge_directory_year_to")}</span>
                   <input
-                    className="criteria-input"
+                    className="directory-field-input"
                     type="number"
-                    placeholder="Today"
+                    placeholder="2026"
                     value={yearTo}
-                    onChange={(e) => setYearTo(e.target.value)}
+                    onChange={(event) => handleYearToChange(event.target.value)}
                   />
-                </div>
+                </label>
               </div>
             </div>
-          </div>
-        </aside>
+          </aside>
 
-        <div className="results-list">
-          <div className="judges-grid">
-            {filteredJudges.map((judge) => (
-              <div className="judge-card" key={judge.id}>
-                <div
-                  className="judge-card-image"
-                  style={{ backgroundImage: `url(${judge.photo})` }}
-                />
-                <div className="judge-card-name">{judge.name}</div>
-                <div className="judge-card-title">{judge.role}</div>
-                <div className="judge-card-court">{judge.court}</div>
-                <div className="judge-card-meta">
-                  <div className="judge-card-line">
-                    <span className="judge-card-label">Elected:</span> {judge.electedOn}
-                  </div>
-                  <div className="judge-card-line">
-                    <span className="judge-card-label">Area:</span> {judge.area}
-                  </div>
-                </div>
-                <Link className="download-link" to={`/data/judges/${encodeURIComponent(judge.id)}`}>
-                  View Profile
-                </Link>
+          <div className="directory-results-panel">
+            <div className="directory-results-toolbar">
+              <div>
+                <h2 className="directory-results-title">
+                  {loading
+                    ? t("judge_directory_preparing_records")
+                    : `${t("judge_directory_showing_results")} ${showingFrom}-${showingTo} ${t("judge_directory_of")} ${filteredJudges.length}`}
+                </h2>
               </div>
-            ))}
+
+              <div className="directory-results-controls">
+                <label className="directory-inline-control">
+                  <span>{t("judge_directory_sort")}</span>
+                  <select value={sortBy} onChange={(event) => handleSortChange(event.target.value)}>
+                    <option value="name-asc">{t("judge_directory_sort_name_asc")}</option>
+                    <option value="name-desc">{t("judge_directory_sort_name_desc")}</option>
+                    <option value="area">{t("judge_directory_sort_area")}</option>
+                    <option value="year-desc">{t("judge_directory_sort_year_desc")}</option>
+                    <option value="year-asc">{t("judge_directory_sort_year_asc")}</option>
+                  </select>
+                </label>
+
+                <label className="directory-inline-control">
+                  <span>{t("judge_directory_per_page")}</span>
+                  <select
+                    value={pageSize}
+                    onChange={(event) =>
+                      handlePageSizeChange(Number(event.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])
+                    }
+                  >
+                    {PAGE_SIZE_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            {loading ? (
+              <div className="directory-feedback-card">
+                <h3>{t("judge_directory_loading_title")}</h3>
+                <p>{t("judge_directory_loading_desc")}</p>
+              </div>
+            ) : error ? (
+              <div className="directory-feedback-card error">
+                <h3>{t("judge_directory_error_title")}</h3>
+                <p>{error}</p>
+              </div>
+            ) : filteredJudges.length === 0 ? (
+              <div className="directory-feedback-card">
+                <h3>{t("judge_directory_empty_title")}</h3>
+                <p>{t("judge_directory_empty_desc")}</p>
+              </div>
+            ) : (
+              <>
+                <div className="directory-card-grid judges-directory-grid">
+                  {paginatedJudges.map((judge) => (
+                    <article className="directory-card judge-directory-card" key={judge.id}>
+                      <div
+                        className="judge-directory-photo"
+                        style={{ backgroundImage: `url(${judge.photo})` }}
+                      />
+
+                      <div className="judge-directory-body">
+                        <div className="judge-directory-top">
+                          <span className="judge-directory-tag">{t("judge_directory_role")}</span>
+                          {judge.yearOfElection ? (
+                            <span className="judge-directory-year">
+                              {t("judge_directory_elected_short")} {judge.yearOfElection}
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <Link className="directory-card-title" to={`/data/judges/${encodeURIComponent(judge.id)}`}>
+                          {judge.name}
+                        </Link>
+
+                        <div className="judge-directory-meta">
+                          <div className="judge-directory-meta-row">
+                            <span className="judge-directory-meta-label">{t("judge_directory_area_label")}</span>
+                            <span>{judge.area || t("judge_directory_not_provided")}</span>
+                          </div>
+                          <div className="judge-directory-meta-row">
+                            <span className="judge-directory-meta-label">{t("judge_directory_year_label")}</span>
+                            <span>{judge.yearOfElection || t("judge_directory_not_provided")}</span>
+                          </div>
+                        </div>
+
+                        <div className="directory-card-actions">
+                          <Link className="directory-primary-link" to={`/data/judges/${encodeURIComponent(judge.id)}`}>
+                            {t("judge_directory_open_profile")}
+                          </Link>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+
+                <div className="directory-pagination" aria-label="Judges pagination">
+                  <button
+                    className="directory-pagination-btn"
+                    type="button"
+                    onClick={() => setPage((value) => Math.max(value - 1, 1))}
+                    disabled={currentPage === 1}
+                  >
+                    {t("pagination_previous")}
+                  </button>
+
+                  <div className="directory-pagination-pages">
+                    {pageWindow.map((pageNumber) => (
+                      <button
+                        key={pageNumber}
+                        className={`directory-pagination-page ${pageNumber === currentPage ? "active" : ""}`}
+                        type="button"
+                        onClick={() => setPage(pageNumber)}
+                      >
+                        {pageNumber}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    className="directory-pagination-btn"
+                    type="button"
+                    onClick={() => setPage((value) => Math.min(value + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                  >
+                    {t("pagination_next")}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
-      </div>
+      </section>
     </main>
   );
 }

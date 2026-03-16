@@ -66,7 +66,171 @@ export type TKey =
   | "research_analysis_4_title"
   | "research_analysis_4_snippet"
   | "research_analysis_5_title"
-  | "research_analysis_5_snippet";
+  | "research_analysis_5_snippet"
+  | "data_tab_courts"
+  | "data_tab_judges"
+  | "data_tab_cases"
+  | "status_active"
+  | "status_inactive"
+  | "status_closed"
+  | "status_unknown"
+  | "court_directory_search_label"
+  | "court_directory_search_placeholder"
+  | "court_directory_matching_records"
+  | "court_directory_loading_directory"
+  | "court_directory_filter_eyebrow"
+  | "court_directory_refine_results"
+  | "court_directory_reset"
+  | "court_directory_court_name"
+  | "court_directory_court_name_placeholder"
+  | "court_directory_court_type"
+  | "court_directory_all_court_types"
+  | "court_directory_jurisdiction"
+  | "court_directory_all_jurisdictions"
+  | "court_directory_status"
+  | "court_directory_all_statuses"
+  | "court_directory_sort"
+  | "court_directory_per_page"
+  | "court_directory_sort_name_asc"
+  | "court_directory_sort_name_desc"
+  | "court_directory_sort_jurisdiction"
+  | "court_directory_sort_status"
+  | "court_directory_preparing_records"
+  | "court_directory_showing_results"
+  | "court_directory_of"
+  | "court_directory_loading_title"
+  | "court_directory_loading_desc"
+  | "court_directory_error_title"
+  | "court_directory_empty_title"
+  | "court_directory_empty_desc"
+  | "court_directory_open_profile"
+  | "court_directory_official_site"
+  | "court_directory_no_website"
+  | "pagination_previous"
+  | "pagination_next"
+  | "court_detail_loading"
+  | "court_detail_not_found"
+  | "court_detail_back"
+  | "court_detail_visit_website"
+  | "court_detail_about_fallback"
+  | "court_detail_address"
+  | "court_detail_phone"
+  | "court_detail_jurisdiction"
+  | "court_detail_top_case_types"
+  | "court_detail_total_cases"
+  | "court_detail_total_cases_per_year"
+  | "court_detail_avg_time"
+  | "court_detail_avg_cost"
+  | "court_detail_recent_cases"
+  | "court_detail_recent_cases_caption"
+  | "court_detail_case_id"
+  | "court_detail_type"
+  | "court_detail_subtype"
+  | "court_detail_basis_type"
+  | "court_detail_filing_date"
+  | "court_detail_status"
+  | "court_detail_not_provided"
+  | "court_detail_no_chart_data"
+  | "court_detail_no_distribution"
+  | "court_detail_no_metrics"
+  | "court_detail_no_cases"
+  | "judge_directory_search_label"
+  | "judge_directory_search_placeholder"
+  | "judge_directory_matching_records"
+  | "judge_directory_loading_directory"
+  | "judge_directory_filter_eyebrow"
+  | "judge_directory_refine_results"
+  | "judge_directory_reset"
+  | "judge_directory_name"
+  | "judge_directory_name_placeholder"
+  | "judge_directory_area"
+  | "judge_directory_all_areas"
+  | "judge_directory_year_from"
+  | "judge_directory_year_to"
+  | "judge_directory_sort"
+  | "judge_directory_per_page"
+  | "judge_directory_sort_name_asc"
+  | "judge_directory_sort_name_desc"
+  | "judge_directory_sort_area"
+  | "judge_directory_sort_year_desc"
+  | "judge_directory_sort_year_asc"
+  | "judge_directory_preparing_records"
+  | "judge_directory_showing_results"
+  | "judge_directory_of"
+  | "judge_directory_loading_title"
+  | "judge_directory_loading_desc"
+  | "judge_directory_error_title"
+  | "judge_directory_empty_title"
+  | "judge_directory_empty_desc"
+  | "judge_directory_role"
+  | "judge_directory_elected_short"
+  | "judge_directory_area_label"
+  | "judge_directory_year_label"
+  | "judge_directory_not_provided"
+  | "judge_directory_open_profile"
+  | "case_directory_search_label"
+  | "case_directory_search_placeholder"
+  | "case_directory_matching_records"
+  | "case_directory_loading_directory"
+  | "case_directory_recent_limit_note"
+  | "case_directory_filter_eyebrow"
+  | "case_directory_refine_results"
+  | "case_directory_reset"
+  | "case_directory_court"
+  | "case_directory_court_placeholder"
+  | "case_directory_judge"
+  | "case_directory_judge_placeholder"
+  | "case_directory_legal_area"
+  | "case_directory_all_areas"
+  | "case_directory_status"
+  | "case_directory_all_statuses"
+  | "case_directory_date_from"
+  | "case_directory_date_to"
+  | "case_directory_preparing_records"
+  | "case_directory_showing_results"
+  | "case_directory_of"
+  | "case_directory_sort"
+  | "case_directory_sort_recent"
+  | "case_directory_sort_oldest"
+  | "case_directory_sort_court"
+  | "case_directory_sort_judge"
+  | "case_directory_sort_status"
+  | "case_directory_per_page"
+  | "case_directory_loading_title"
+  | "case_directory_loading_desc"
+  | "case_directory_error_title"
+  | "case_directory_empty_title"
+  | "case_directory_empty_desc"
+  | "case_directory_open_case"
+  | "case_detail_loading"
+  | "case_detail_not_found"
+  | "case_detail_back"
+  | "case_detail_court"
+  | "case_detail_judge"
+  | "case_detail_legal_area"
+  | "case_detail_decision_date"
+  | "case_detail_case_type"
+  | "case_detail_case_subtype"
+  | "case_detail_basis_type"
+  | "case_detail_basis"
+  | "case_detail_articles"
+  | "case_detail_public_prosecutor_case"
+  | "case_detail_case_cost"
+  | "case_detail_total_case_cost"
+  | "case_detail_mitigating_factors"
+  | "case_detail_plea_deal"
+  | "case_detail_duration"
+  | "case_detail_days"
+  | "case_detail_severity_ratio"
+  | "case_detail_sentence_severity"
+  | "case_detail_appeal"
+  | "case_detail_overview"
+  | "case_detail_key_insights"
+  | "case_detail_timeline"
+  | "case_detail_no_timeline"
+  | "case_detail_related_cases"
+  | "case_detail_not_provided"
+  | "case_detail_no_related_cases";
 
 export const translations: Record<Lang, Record<TKey, string>> = {
   EN: {
@@ -157,6 +321,170 @@ export const translations: Record<Lang, Record<TKey, string>> = {
     research_analysis_5_title: "Cross-Border Protocols",
     research_analysis_5_snippet:
       "Standardizing e-evidence procedures across member states for faster resolution.",
+    data_tab_courts: "Courts",
+    data_tab_judges: "Judges",
+    data_tab_cases: "Cases",
+    status_active: "Active",
+    status_inactive: "Inactive",
+    status_closed: "Closed",
+    status_unknown: "Unknown",
+    court_directory_search_label: "Search courts",
+    court_directory_search_placeholder: "Search by court, address, phone, or website",
+    court_directory_matching_records: "matching records",
+    court_directory_loading_directory: "Loading court directory...",
+    court_directory_filter_eyebrow: "Filter courts",
+    court_directory_refine_results: "Refine results",
+    court_directory_reset: "Reset",
+    court_directory_court_name: "Court name",
+    court_directory_court_name_placeholder: "Type a court name",
+    court_directory_court_type: "Court type",
+    court_directory_all_court_types: "All court types",
+    court_directory_jurisdiction: "Jurisdiction",
+    court_directory_all_jurisdictions: "All jurisdictions",
+    court_directory_status: "Status",
+    court_directory_all_statuses: "All statuses",
+    court_directory_sort: "Sort",
+    court_directory_per_page: "Per page",
+    court_directory_sort_name_asc: "Name A-Z",
+    court_directory_sort_name_desc: "Name Z-A",
+    court_directory_sort_jurisdiction: "Jurisdiction",
+    court_directory_sort_status: "Status",
+    court_directory_preparing_records: "Preparing records...",
+    court_directory_showing_results: "Showing",
+    court_directory_of: "of",
+    court_directory_loading_title: "Loading courts",
+    court_directory_loading_desc: "The public directory is pulling the latest records from the database.",
+    court_directory_error_title: "Could not load courts",
+    court_directory_empty_title: "No courts match these filters",
+    court_directory_empty_desc: "Adjust the filters or reset them to view the full directory.",
+    court_directory_open_profile: "Open profile",
+    court_directory_official_site: "Official site",
+    court_directory_no_website: "No website listed",
+    pagination_previous: "Previous",
+    pagination_next: "Next",
+    court_detail_loading: "Loading court...",
+    court_detail_not_found: "Court not found",
+    court_detail_back: "Back to Courts",
+    court_detail_visit_website: "Visit Website",
+    court_detail_about_fallback: "No description has been added for this court yet.",
+    court_detail_address: "Address",
+    court_detail_phone: "Phone",
+    court_detail_jurisdiction: "Jurisdiction",
+    court_detail_top_case_types: "Top 3 Case Types",
+    court_detail_total_cases: "Total Cases",
+    court_detail_total_cases_per_year: "Total Cases per Year",
+    court_detail_avg_time: "Average Time per Case Type",
+    court_detail_avg_cost: "Average Cost per Case Type",
+    court_detail_recent_cases: "Recent Cases",
+    court_detail_recent_cases_caption: "Showing the 10 most recent court cases",
+    court_detail_case_id: "Case ID",
+    court_detail_type: "Type",
+    court_detail_subtype: "Subtype",
+    court_detail_basis_type: "Basis Type",
+    court_detail_filing_date: "Filing Date",
+    court_detail_status: "Status",
+    court_detail_not_provided: "Not provided",
+    court_detail_no_chart_data: "No chart data available yet.",
+    court_detail_no_distribution: "No distribution data available yet.",
+    court_detail_no_metrics: "No court metrics are available yet for this record.",
+    court_detail_no_cases: "No cases are available for this court yet.",
+    judge_directory_search_label: "Search judges",
+    judge_directory_search_placeholder: "Search by judge, area, or year",
+    judge_directory_matching_records: "matching records",
+    judge_directory_loading_directory: "Loading judges directory...",
+    judge_directory_filter_eyebrow: "Filter judges",
+    judge_directory_refine_results: "Refine results",
+    judge_directory_reset: "Reset",
+    judge_directory_name: "Judge name",
+    judge_directory_name_placeholder: "Type a judge name",
+    judge_directory_area: "Area of work",
+    judge_directory_all_areas: "All areas",
+    judge_directory_year_from: "From year",
+    judge_directory_year_to: "To year",
+    judge_directory_sort: "Sort",
+    judge_directory_per_page: "Per page",
+    judge_directory_sort_name_asc: "Name A-Z",
+    judge_directory_sort_name_desc: "Name Z-A",
+    judge_directory_sort_area: "Area",
+    judge_directory_sort_year_desc: "Newest election",
+    judge_directory_sort_year_asc: "Oldest election",
+    judge_directory_preparing_records: "Preparing records...",
+    judge_directory_showing_results: "Showing",
+    judge_directory_of: "of",
+    judge_directory_loading_title: "Loading judges",
+    judge_directory_loading_desc: "The public directory is pulling the latest judge records from the database.",
+    judge_directory_error_title: "Could not load judges",
+    judge_directory_empty_title: "No judges match these filters",
+    judge_directory_empty_desc: "Adjust the filters or reset them to view the full directory.",
+    judge_directory_role: "Judge",
+    judge_directory_elected_short: "Elected",
+    judge_directory_area_label: "Area",
+    judge_directory_year_label: "Election year",
+    judge_directory_not_provided: "Not provided",
+    judge_directory_open_profile: "Open profile",
+    case_directory_search_label: "Search cases",
+    case_directory_search_placeholder: "Search by case ID, court, judge, legal area, or summary",
+    case_directory_matching_records: "matching records",
+    case_directory_loading_directory: "Loading case directory...",
+    case_directory_recent_limit_note: "Showing the 100 most recent cases by default",
+    case_directory_filter_eyebrow: "Filter cases",
+    case_directory_refine_results: "Refine results",
+    case_directory_reset: "Reset",
+    case_directory_court: "Court",
+    case_directory_court_placeholder: "Type a court name",
+    case_directory_judge: "Judge",
+    case_directory_judge_placeholder: "Type a judge name",
+    case_directory_legal_area: "Legal area",
+    case_directory_all_areas: "All legal areas",
+    case_directory_status: "Status",
+    case_directory_all_statuses: "All statuses",
+    case_directory_date_from: "Date from",
+    case_directory_date_to: "Date to",
+    case_directory_preparing_records: "Preparing records...",
+    case_directory_showing_results: "Showing",
+    case_directory_of: "of",
+    case_directory_sort: "Sort",
+    case_directory_sort_recent: "Most recent",
+    case_directory_sort_oldest: "Oldest first",
+    case_directory_sort_court: "Court",
+    case_directory_sort_judge: "Judge",
+    case_directory_sort_status: "Status",
+    case_directory_per_page: "Per page",
+    case_directory_loading_title: "Loading cases",
+    case_directory_loading_desc: "The public directory is pulling the latest case records from the database.",
+    case_directory_error_title: "Could not load cases",
+    case_directory_empty_title: "No cases match these filters",
+    case_directory_empty_desc: "Adjust the filters or reset them to view matching cases.",
+    case_directory_open_case: "Open case",
+    case_detail_loading: "Loading case...",
+    case_detail_not_found: "Case not found",
+    case_detail_back: "Back to Cases",
+    case_detail_court: "Court",
+    case_detail_judge: "Judge",
+    case_detail_legal_area: "Legal area",
+    case_detail_decision_date: "Decision date",
+    case_detail_case_type: "Case type",
+    case_detail_case_subtype: "Case subtype",
+    case_detail_basis_type: "Basis type",
+    case_detail_basis: "Basis",
+    case_detail_articles: "Articles",
+    case_detail_public_prosecutor_case: "Public prosecutor case",
+    case_detail_case_cost: "Case cost",
+    case_detail_total_case_cost: "Total case cost",
+    case_detail_mitigating_factors: "Mitigating factors",
+    case_detail_plea_deal: "Plea deal",
+    case_detail_duration: "Duration",
+    case_detail_days: "days",
+    case_detail_severity_ratio: "Severity ratio",
+    case_detail_sentence_severity: "Sentence severity",
+    case_detail_appeal: "Appeal",
+    case_detail_overview: "Overview",
+    case_detail_key_insights: "Key insights",
+    case_detail_timeline: "Timeline",
+    case_detail_no_timeline: "No timeline is available for this case yet.",
+    case_detail_related_cases: "Related cases",
+    case_detail_not_provided: "Not provided",
+    case_detail_no_related_cases: "No related cases are available yet.",
   },
 
   MK: {
@@ -247,6 +575,170 @@ export const translations: Record<Lang, Record<TKey, string>> = {
     research_analysis_5_title: "Прекугранични протоколи",
     research_analysis_5_snippet:
       "Стандардизирање на процедурите за е-докази меѓу државите за побрзо решавање.",
+    data_tab_courts: "Судови",
+    data_tab_judges: "Судии",
+    data_tab_cases: "Предмети",
+    status_active: "Активен",
+    status_inactive: "Неактивен",
+    status_closed: "Затворен",
+    status_unknown: "Непознато",
+    court_directory_search_label: "Пребарај судови",
+    court_directory_search_placeholder: "Пребарувај по суд, адреса, телефон или веб-страница",
+    court_directory_matching_records: "совпаѓања",
+    court_directory_loading_directory: "Се вчитува именикот на судови...",
+    court_directory_filter_eyebrow: "Филтри",
+    court_directory_refine_results: "Прецизирај резултати",
+    court_directory_reset: "Ресетирај",
+    court_directory_court_name: "Име на суд",
+    court_directory_court_name_placeholder: "Внеси име на суд",
+    court_directory_court_type: "Тип на суд",
+    court_directory_all_court_types: "Сите типови на судови",
+    court_directory_jurisdiction: "Надлежност",
+    court_directory_all_jurisdictions: "Сите надлежности",
+    court_directory_status: "Статус",
+    court_directory_all_statuses: "Сите статуси",
+    court_directory_sort: "Подреди",
+    court_directory_per_page: "По страница",
+    court_directory_sort_name_asc: "Име A-Z",
+    court_directory_sort_name_desc: "Име Z-A",
+    court_directory_sort_jurisdiction: "Надлежност",
+    court_directory_sort_status: "Статус",
+    court_directory_preparing_records: "Се подготвуваат записите...",
+    court_directory_showing_results: "Прикажани",
+    court_directory_of: "од",
+    court_directory_loading_title: "Се вчитуваат судовите",
+    court_directory_loading_desc: "Именикот ги презема најновите записи од базата.",
+    court_directory_error_title: "Судовите не можеа да се вчитаат",
+    court_directory_empty_title: "Нема судови што одговараат на филтрите",
+    court_directory_empty_desc: "Промени ги филтрите или ресетирај ги за да го видиш целиот именик.",
+    court_directory_open_profile: "Отвори профил",
+    court_directory_official_site: "Официјална страница",
+    court_directory_no_website: "Нема веб-страница",
+    pagination_previous: "Претходна",
+    pagination_next: "Следна",
+    court_detail_loading: "Се вчитува судот...",
+    court_detail_not_found: "Судот не е пронајден",
+    court_detail_back: "Назад кон судови",
+    court_detail_visit_website: "Отвори веб-страница",
+    court_detail_about_fallback: "Сè уште нема додаден опис за овој суд.",
+    court_detail_address: "Адреса",
+    court_detail_phone: "Телефон",
+    court_detail_jurisdiction: "Надлежност",
+    court_detail_top_case_types: "Топ 3 типови на предмети",
+    court_detail_total_cases: "Вкупно предмети",
+    court_detail_total_cases_per_year: "Вкупно предмети по година",
+    court_detail_avg_time: "Просечно време по тип на предмет",
+    court_detail_avg_cost: "Просечен трошок по тип на предмет",
+    court_detail_recent_cases: "Најнови предмети",
+    court_detail_recent_cases_caption: "Прикажани се 10-те најнови предмети",
+    court_detail_case_id: "ID на предмет",
+    court_detail_type: "Тип",
+    court_detail_subtype: "Подтип",
+    court_detail_basis_type: "Основ на предмет",
+    court_detail_filing_date: "Датум на поднесување",
+    court_detail_status: "Статус",
+    court_detail_not_provided: "Не е достапно",
+    court_detail_no_chart_data: "Сè уште нема достапни податоци за графикот.",
+    court_detail_no_distribution: "Сè уште нема достапна распределба.",
+    court_detail_no_metrics: "Сè уште нема достапни метрики за овој запис.",
+    court_detail_no_cases: "Сè уште нема достапни предмети за овој суд.",
+    judge_directory_search_label: "Пребарај судии",
+    judge_directory_search_placeholder: "Пребарувај по судија, област или година",
+    judge_directory_matching_records: "совпаѓања",
+    judge_directory_loading_directory: "Се вчитува именикот на судии...",
+    judge_directory_filter_eyebrow: "Филтри",
+    judge_directory_refine_results: "Прецизирај резултати",
+    judge_directory_reset: "Ресетирај",
+    judge_directory_name: "Име на судија",
+    judge_directory_name_placeholder: "Внеси име на судија",
+    judge_directory_area: "Област на работа",
+    judge_directory_all_areas: "Сите области",
+    judge_directory_year_from: "Од година",
+    judge_directory_year_to: "До година",
+    judge_directory_sort: "Подреди",
+    judge_directory_per_page: "По страница",
+    judge_directory_sort_name_asc: "Име A-Z",
+    judge_directory_sort_name_desc: "Име Z-A",
+    judge_directory_sort_area: "Област",
+    judge_directory_sort_year_desc: "Најнова изборна година",
+    judge_directory_sort_year_asc: "Најстара изборна година",
+    judge_directory_preparing_records: "Се подготвуваат записите...",
+    judge_directory_showing_results: "Прикажани",
+    judge_directory_of: "од",
+    judge_directory_loading_title: "Се вчитуваат судиите",
+    judge_directory_loading_desc: "Именикот ги презема најновите записи за судии од базата.",
+    judge_directory_error_title: "Судиите не можеа да се вчитаат",
+    judge_directory_empty_title: "Нема судии што одговараат на филтрите",
+    judge_directory_empty_desc: "Промени ги филтрите или ресетирај ги за да го видиш целиот именик.",
+    judge_directory_role: "Судија",
+    judge_directory_elected_short: "Избран",
+    judge_directory_area_label: "Област",
+    judge_directory_year_label: "Година на избор",
+    judge_directory_not_provided: "Не е достапно",
+    judge_directory_open_profile: "Отвори профил",
+    case_directory_search_label: "Пребарај предмети",
+    case_directory_search_placeholder: "Пребарај по ID на предмет, суд, судија, правна област или опис",
+    case_directory_matching_records: "совпаѓања",
+    case_directory_loading_directory: "Се вчитува именикот на предмети...",
+    case_directory_recent_limit_note: "Стандардно се прикажуваат 100-те најнови предмети",
+    case_directory_filter_eyebrow: "Филтри",
+    case_directory_refine_results: "Прецизирај резултати",
+    case_directory_reset: "Ресетирај",
+    case_directory_court: "Суд",
+    case_directory_court_placeholder: "Внеси име на суд",
+    case_directory_judge: "Судија",
+    case_directory_judge_placeholder: "Внеси име на судија",
+    case_directory_legal_area: "Правна област",
+    case_directory_all_areas: "Сите правни области",
+    case_directory_status: "Статус",
+    case_directory_all_statuses: "Сите статуси",
+    case_directory_date_from: "Датум од",
+    case_directory_date_to: "Датум до",
+    case_directory_preparing_records: "Се подготвуваат записите...",
+    case_directory_showing_results: "Прикажани",
+    case_directory_of: "од",
+    case_directory_sort: "Подреди",
+    case_directory_sort_recent: "Најнови",
+    case_directory_sort_oldest: "Најстари",
+    case_directory_sort_court: "Суд",
+    case_directory_sort_judge: "Судија",
+    case_directory_sort_status: "Статус",
+    case_directory_per_page: "По страница",
+    case_directory_loading_title: "Се вчитуваат предметите",
+    case_directory_loading_desc: "Јавниот именик ги презема најновите записи за предмети од базата.",
+    case_directory_error_title: "Предметите не можеа да се вчитаат",
+    case_directory_empty_title: "Нема предмети што одговараат на филтрите",
+    case_directory_empty_desc: "Промени ги филтрите или ресетирај ги за да ги видиш соодветните предмети.",
+    case_directory_open_case: "Отвори предмет",
+    case_detail_loading: "Се вчитува предметот...",
+    case_detail_not_found: "Предметот не е пронајден",
+    case_detail_back: "Назад кон предмети",
+    case_detail_court: "Суд",
+    case_detail_judge: "Судија",
+    case_detail_legal_area: "Правна област",
+    case_detail_decision_date: "Датум на одлука",
+    case_detail_case_type: "Тип на предмет",
+    case_detail_case_subtype: "Подтип на предмет",
+    case_detail_basis_type: "Тип на основ",
+    case_detail_basis: "Основ",
+    case_detail_articles: "Членови",
+    case_detail_public_prosecutor_case: "Предмет на јавно обвинителство",
+    case_detail_case_cost: "Трошок на предмет",
+    case_detail_total_case_cost: "Вкупен трошок на предмет",
+    case_detail_mitigating_factors: "Олеснителни околности",
+    case_detail_plea_deal: "Спогодба за признавање вина",
+    case_detail_duration: "Времетраење",
+    case_detail_days: "дена",
+    case_detail_severity_ratio: "Однос на тежина",
+    case_detail_sentence_severity: "Тежина на пресуда",
+    case_detail_appeal: "Жалба",
+    case_detail_overview: "Преглед",
+    case_detail_key_insights: "Клучни увиди",
+    case_detail_timeline: "Временска линија",
+    case_detail_no_timeline: "Сè уште нема временска линија за овој предмет.",
+    case_detail_related_cases: "Поврзани предмети",
+    case_detail_not_provided: "Не е достапно",
+    case_detail_no_related_cases: "Сè уште нема поврзани предмети.",
   },
 
   AL: {
@@ -337,5 +829,169 @@ export const translations: Record<Lang, Record<TKey, string>> = {
     research_analysis_5_title: "Protokolle ndërkufitare",
     research_analysis_5_snippet:
       "Standardizimi i procedurave të e-provave ndërmjet shteteve për zgjidhje më të shpejtë.",
+    data_tab_courts: "Gjykatat",
+    data_tab_judges: "Gjyqtarët",
+    data_tab_cases: "Rastet",
+    status_active: "Aktive",
+    status_inactive: "Jo aktive",
+    status_closed: "Mbyllur",
+    status_unknown: "E panjohur",
+    court_directory_search_label: "Kërko gjykata",
+    court_directory_search_placeholder: "Kërko sipas gjykatës, adresës, telefonit ose faqes web",
+    court_directory_matching_records: "rezultate përputhëse",
+    court_directory_loading_directory: "Po ngarkohet direktoria e gjykatave...",
+    court_directory_filter_eyebrow: "Filtra",
+    court_directory_refine_results: "Përpunoni rezultatet",
+    court_directory_reset: "Rivendos",
+    court_directory_court_name: "Emri i gjykatës",
+    court_directory_court_name_placeholder: "Shkruaj emrin e gjykatës",
+    court_directory_court_type: "Lloji i gjykatës",
+    court_directory_all_court_types: "Të gjitha llojet e gjykatave",
+    court_directory_jurisdiction: "Juridiksioni",
+    court_directory_all_jurisdictions: "Të gjitha juridiksionet",
+    court_directory_status: "Statusi",
+    court_directory_all_statuses: "Të gjitha statuset",
+    court_directory_sort: "Rendit",
+    court_directory_per_page: "Për faqe",
+    court_directory_sort_name_asc: "Emri A-Z",
+    court_directory_sort_name_desc: "Emri Z-A",
+    court_directory_sort_jurisdiction: "Juridiksioni",
+    court_directory_sort_status: "Statusi",
+    court_directory_preparing_records: "Po përgatiten të dhënat...",
+    court_directory_showing_results: "Duke shfaqur",
+    court_directory_of: "nga",
+    court_directory_loading_title: "Po ngarkohen gjykatat",
+    court_directory_loading_desc: "Direktoria publike po merr të dhënat më të fundit nga databaza.",
+    court_directory_error_title: "Gjykatat nuk mund të ngarkoheshin",
+    court_directory_empty_title: "Asnjë gjykatë nuk përputhet me këta filtra",
+    court_directory_empty_desc: "Ndrysho filtrat ose rivendosi për të parë të gjithë drejtorinë.",
+    court_directory_open_profile: "Hap profilin",
+    court_directory_official_site: "Faqja zyrtare",
+    court_directory_no_website: "Nuk ka faqe web",
+    pagination_previous: "Mbrapa",
+    pagination_next: "Përpara",
+    court_detail_loading: "Po ngarkohet gjykata...",
+    court_detail_not_found: "Gjykata nuk u gjet",
+    court_detail_back: "Kthehu te gjykatat",
+    court_detail_visit_website: "Vizito faqen web",
+    court_detail_about_fallback: "Ende nuk është shtuar një përshkrim për këtë gjykatë.",
+    court_detail_address: "Adresa",
+    court_detail_phone: "Telefoni",
+    court_detail_jurisdiction: "Juridiksioni",
+    court_detail_top_case_types: "Top 3 llojet e rasteve",
+    court_detail_total_cases: "Rastet totale",
+    court_detail_total_cases_per_year: "Rastet totale për vit",
+    court_detail_avg_time: "Koha mesatare për lloj rasti",
+    court_detail_avg_cost: "Kostoja mesatare për lloj rasti",
+    court_detail_recent_cases: "Rastet më të fundit",
+    court_detail_recent_cases_caption: "Shfaqen 10 rastet më të fundit të gjykatës",
+    court_detail_case_id: "ID e rastit",
+    court_detail_type: "Lloji",
+    court_detail_subtype: "Nënlloji",
+    court_detail_basis_type: "Baza e rastit",
+    court_detail_filing_date: "Data e paraqitjes",
+    court_detail_status: "Statusi",
+    court_detail_not_provided: "Nuk është dhënë",
+    court_detail_no_chart_data: "Ende nuk ka të dhëna për grafikun.",
+    court_detail_no_distribution: "Ende nuk ka të dhëna për shpërndarjen.",
+    court_detail_no_metrics: "Ende nuk ka metrika për këtë regjistrim.",
+    court_detail_no_cases: "Ende nuk ka raste për këtë gjykatë.",
+    judge_directory_search_label: "Kërko gjyqtarë",
+    judge_directory_search_placeholder: "Kërko sipas gjyqtarit, fushës ose vitit",
+    judge_directory_matching_records: "rezultate përputhëse",
+    judge_directory_loading_directory: "Po ngarkohet direktoria e gjyqtarëve...",
+    judge_directory_filter_eyebrow: "Filtra",
+    judge_directory_refine_results: "Përpunoni rezultatet",
+    judge_directory_reset: "Rivendos",
+    judge_directory_name: "Emri i gjyqtarit",
+    judge_directory_name_placeholder: "Shkruaj emrin e gjyqtarit",
+    judge_directory_area: "Fusha e punës",
+    judge_directory_all_areas: "Të gjitha fushat",
+    judge_directory_year_from: "Nga viti",
+    judge_directory_year_to: "Deri në vit",
+    judge_directory_sort: "Rendit",
+    judge_directory_per_page: "Për faqe",
+    judge_directory_sort_name_asc: "Emri A-Z",
+    judge_directory_sort_name_desc: "Emri Z-A",
+    judge_directory_sort_area: "Fusha",
+    judge_directory_sort_year_desc: "Zgjedhja më e re",
+    judge_directory_sort_year_asc: "Zgjedhja më e vjetër",
+    judge_directory_preparing_records: "Po përgatiten të dhënat...",
+    judge_directory_showing_results: "Duke shfaqur",
+    judge_directory_of: "nga",
+    judge_directory_loading_title: "Po ngarkohen gjyqtarët",
+    judge_directory_loading_desc: "Direktoria publike po merr të dhënat më të fundit për gjyqtarët nga databaza.",
+    judge_directory_error_title: "Gjyqtarët nuk mund të ngarkoheshin",
+    judge_directory_empty_title: "Asnjë gjyqtar nuk përputhet me këta filtra",
+    judge_directory_empty_desc: "Ndrysho filtrat ose rivendosi për të parë të gjithë drejtorinë.",
+    judge_directory_role: "Gjyqtar",
+    judge_directory_elected_short: "Zgjedhur",
+    judge_directory_area_label: "Fusha",
+    judge_directory_year_label: "Viti i zgjedhjes",
+    judge_directory_not_provided: "Nuk është dhënë",
+    judge_directory_open_profile: "Hap profilin",
+    case_directory_search_label: "Kërko raste",
+    case_directory_search_placeholder: "Kërko sipas ID-së së rastit, gjykatës, gjyqtarit, fushës ligjore ose përshkrimit",
+    case_directory_matching_records: "rezultate përputhëse",
+    case_directory_loading_directory: "Po ngarkohet direktoria e rasteve...",
+    case_directory_recent_limit_note: "Si parazgjedhje shfaqen 100 rastet më të fundit",
+    case_directory_filter_eyebrow: "Filtra",
+    case_directory_refine_results: "Përpunoni rezultatet",
+    case_directory_reset: "Rivendos",
+    case_directory_court: "Gjykata",
+    case_directory_court_placeholder: "Shkruaj emrin e gjykatës",
+    case_directory_judge: "Gjyqtari",
+    case_directory_judge_placeholder: "Shkruaj emrin e gjyqtarit",
+    case_directory_legal_area: "Fusha ligjore",
+    case_directory_all_areas: "Të gjitha fushat ligjore",
+    case_directory_status: "Statusi",
+    case_directory_all_statuses: "Të gjitha statuset",
+    case_directory_date_from: "Data nga",
+    case_directory_date_to: "Data deri",
+    case_directory_preparing_records: "Po përgatiten të dhënat...",
+    case_directory_showing_results: "Duke shfaqur",
+    case_directory_of: "nga",
+    case_directory_sort: "Rendit",
+    case_directory_sort_recent: "Më të fundit",
+    case_directory_sort_oldest: "Më të vjetrat",
+    case_directory_sort_court: "Gjykata",
+    case_directory_sort_judge: "Gjyqtari",
+    case_directory_sort_status: "Statusi",
+    case_directory_per_page: "Për faqe",
+    case_directory_loading_title: "Po ngarkohen rastet",
+    case_directory_loading_desc: "Direktoria publike po merr të dhënat më të fundit për rastet nga databaza.",
+    case_directory_error_title: "Rastet nuk mund të ngarkoheshin",
+    case_directory_empty_title: "Asnjë rast nuk përputhet me këta filtra",
+    case_directory_empty_desc: "Ndrysho filtrat ose rivendosi për të parë rastet përkatëse.",
+    case_directory_open_case: "Hap rastin",
+    case_detail_loading: "Po ngarkohet rasti...",
+    case_detail_not_found: "Rasti nuk u gjet",
+    case_detail_back: "Kthehu te rastet",
+    case_detail_court: "Gjykata",
+    case_detail_judge: "Gjyqtari",
+    case_detail_legal_area: "Fusha ligjore",
+    case_detail_decision_date: "Data e vendimit",
+    case_detail_case_type: "Lloji i rastit",
+    case_detail_case_subtype: "Nënlloji i rastit",
+    case_detail_basis_type: "Lloji i bazës",
+    case_detail_basis: "Baza",
+    case_detail_articles: "Nenet",
+    case_detail_public_prosecutor_case: "Rasti i prokurorisë publike",
+    case_detail_case_cost: "Kostoja e rastit",
+    case_detail_total_case_cost: "Kostoja totale e rastit",
+    case_detail_mitigating_factors: "Rrethana lehtësuese",
+    case_detail_plea_deal: "Marrëveshje pranimi faji",
+    case_detail_duration: "Kohëzgjatja",
+    case_detail_days: "ditë",
+    case_detail_severity_ratio: "Raporti i ashpërsisë",
+    case_detail_sentence_severity: "Ashpërsia e dënimit",
+    case_detail_appeal: "Ankesa",
+    case_detail_overview: "Përmbledhje",
+    case_detail_key_insights: "Njohuri kryesore",
+    case_detail_timeline: "Kronologjia",
+    case_detail_no_timeline: "Ende nuk ka kronologji për këtë rast.",
+    case_detail_related_cases: "Raste të ngjashme",
+    case_detail_not_provided: "Nuk është dhënë",
+    case_detail_no_related_cases: "Ende nuk ka raste të ngjashme.",
   },
 };
