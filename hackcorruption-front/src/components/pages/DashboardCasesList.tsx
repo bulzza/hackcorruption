@@ -145,7 +145,7 @@ export default function DashboardCasesList() {
               <thead>
                 <tr>
                   <th>Case ID</th>
-                  <th>Source</th>
+                 
                   <th>Court</th>
                   <th>Judge</th>
                   <th>Date</th>
@@ -159,15 +159,7 @@ export default function DashboardCasesList() {
                 {pageRows.map((item) => (
                   <tr key={item.record_key}>
                     <td className="admin-code">{item.id}</td>
-                    <td>
-                      <span
-                        className={`admin-status-badge ${
-                          item.source === "court_file" ? "neutral" : "active"
-                        }`}
-                      >
-                        {item.source === "court_file" ? "Court file" : "Registry"}
-                      </span>
-                    </td>
+                    
                     <td className="admin-strong">{item.court}</td>
                     <td>{item.judge ?? "N/A"}</td>
                     <td>{item.decision_date ?? "N/A"}</td>

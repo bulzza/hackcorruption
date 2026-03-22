@@ -131,7 +131,7 @@ export default function DashboardJudgesList() {
                 <tr>
                   <th>Photo</th>
                   <th>Full name</th>
-                  <th>Slug</th>
+                 
                   <th>Area of work</th>
                   <th>Year of election</th>
                   <th>Status</th>
@@ -151,7 +151,7 @@ export default function DashboardJudgesList() {
                       </div>
                     </td>
                     <td className="admin-strong">{judge.full_name}</td>
-                    <td className="admin-code">{judge.slug}</td>
+                   
                     <td>{judge.area_of_work}</td>
                     <td>{judge.year_of_election}</td>
                     <td>

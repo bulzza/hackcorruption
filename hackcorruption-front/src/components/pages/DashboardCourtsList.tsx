@@ -155,7 +155,7 @@ export default function DashboardCourtsList() {
               <thead>
                 <tr>
                   <th>Name</th>
-                  <th>Slug</th>
+                
                   <th>Type</th>
                  
                   <th>Address</th>
@@ -167,7 +167,7 @@ export default function DashboardCourtsList() {
                 {pageRows.map((court) => (
                   <tr key={court.id}>
                     <td className="admin-strong">{court.name}</td>
-                    <td className="admin-code">{court.slug}</td>
+                   
                     <td>{court.type}</td>
                     <td>{court.address}</td>
                     <td>
