@@ -5,34 +5,24 @@ import judgePlaceholder from "../../assets/judge_placeholder.png";
 import { listJudges } from "../../services/judgesService";
 import type { Judge } from "../../services/judgesService";
 
-const PAGE_SIZE_OPTIONS = [6, 9, 12] as const;
+const PAGE_SIZE = 9;
 
 const tabClass = ({ isActive }: { isActive: boolean }) => `tab-btn${isActive ? " active" : ""}`;
 
 type JudgeCard = {
   id: string;
   name: string;
-  role: string;
   area: string;
   yearOfElection: string;
+  primaryCourt: string;
   photo: string;
   searchIndex: string;
 };
 
-const mapApiJudgeToCard = (judge: Judge): JudgeCard => {
-  const yearLabel = judge.year_of_election ? String(judge.year_of_election) : "";
-  const area = judge.area_of_work?.trim() || "";
+const normalizeText = (value: string | null | undefined) => (value ?? "").trim();
 
-  return {
-    id: String(judge.id),
-    name: judge.full_name?.trim() || "Unnamed judge",
-    role: "Judge",
-    area,
-    yearOfElection: yearLabel,
-    photo: judge.photoUrl ?? judgePlaceholder,
-    searchIndex: [judge.full_name, area, yearLabel].join(" ").toLowerCase(),
-  };
-};
+const matchesTextFilter = (source: string, filter: string) =>
+  filter.trim() === "" || source.toLowerCase().includes(filter.trim().toLowerCase());
 
 const clampPage = (page: number, totalPages: number) => {
   if (totalPages <= 0) return 1;
@@ -48,19 +38,36 @@ const buildPageWindow = (currentPage: number, totalPages: number) => {
   return Array.from({ length: 5 }, (_, index) => start + index);
 };
 
+const mapApiJudgeToCard = (judge: Judge): JudgeCard => {
+  const name = normalizeText(judge.full_name) || "Unnamed judge";
+  const area = normalizeText(judge.area_of_work);
+  const primaryCourt = normalizeText(judge.primary_court);
+  const yearOfElection = judge.year_of_election ? String(judge.year_of_election) : "";
+
+  return {
+    id: String(judge.id),
+    name,
+    area,
+    yearOfElection,
+    primaryCourt,
+    photo: judge.photoUrl ?? judgePlaceholder,
+    searchIndex: [name, area, primaryCourt, yearOfElection].join(" ").toLowerCase(),
+  };
+};
+
 export default function JudgesPage() {
   const { t } = useI18n();
   const [judges, setJudges] = useState<JudgeCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filtersExpanded, setFiltersExpanded] = useState(true);
 
   const [search, setSearch] = useState("");
-  const [nameFilter] = useState("");
-  const [areaFilter] = useState("all");
-  const [yearFrom] = useState("");
-  const [yearTo] = useState("");
-  const [sortBy, setSortBy] = useState("name-asc");
-  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(6);
+  const [nameFilter, setNameFilter] = useState("");
+  const [courtFilter, setCourtFilter] = useState("");
+  const [areaFilter, setAreaFilter] = useState("");
+  const [yearFrom, setYearFrom] = useState("");
+  const [yearTo, setYearTo] = useState("");
   const [page, setPage] = useState(1);
 
   const deferredSearch = useDeferredValue(search);
@@ -88,61 +95,54 @@ export default function JudgesPage() {
     };
   }, []);
 
+  useEffect(() => {
+    setPage(1);
+  }, [areaFilter, courtFilter, nameFilter, search, yearFrom, yearTo]);
+
   const filteredJudges = useMemo(() => {
     const query = deferredSearch.trim().toLowerCase();
-    const normalizedName = nameFilter.trim().toLowerCase();
     const fromYear = Number(yearFrom);
     const toYear = Number(yearTo);
     const hasFrom = yearFrom.trim() !== "" && Number.isFinite(fromYear);
     const hasTo = yearTo.trim() !== "" && Number.isFinite(toYear);
 
-    const next = judges.filter((judge) => {
+    return judges.filter((judge) => {
       if (query && !judge.searchIndex.includes(query)) return false;
-      if (normalizedName && !judge.name.toLowerCase().includes(normalizedName)) return false;
-      if (areaFilter !== "all" && judge.area !== areaFilter) return false;
+      if (!matchesTextFilter(judge.name, nameFilter)) return false;
+      if (!matchesTextFilter(judge.primaryCourt, courtFilter)) return false;
+      if (!matchesTextFilter(judge.area, areaFilter)) return false;
 
-      const yearValue = Number(judge.yearOfElection);
-      if (hasFrom && (!Number.isFinite(yearValue) || yearValue < fromYear)) return false;
-      if (hasTo && (!Number.isFinite(yearValue) || yearValue > toYear)) return false;
+      const electionYear = Number(judge.yearOfElection);
+      if (hasFrom && (!Number.isFinite(electionYear) || electionYear < fromYear)) return false;
+      if (hasTo && (!Number.isFinite(electionYear) || electionYear > toYear)) return false;
 
       return true;
     });
+  }, [areaFilter, courtFilter, deferredSearch, judges, nameFilter, yearFrom, yearTo]);
 
-    next.sort((left, right) => {
-      if (sortBy === "name-desc") return right.name.localeCompare(left.name);
-      if (sortBy === "year-desc") return Number(right.yearOfElection || 0) - Number(left.yearOfElection || 0);
-      if (sortBy === "year-asc") return Number(left.yearOfElection || 0) - Number(right.yearOfElection || 0);
-      if (sortBy === "area") return left.area.localeCompare(right.area) || left.name.localeCompare(right.name);
-      return left.name.localeCompare(right.name);
-    });
+  const activeFilterCount = [nameFilter, courtFilter, areaFilter, yearFrom, yearTo].filter(
+    (value) => value.trim() !== ""
+  ).length;
 
-    return next;
-  }, [areaFilter, deferredSearch, judges, nameFilter, sortBy, yearFrom, yearTo]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredJudges.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(filteredJudges.length / PAGE_SIZE));
   const currentPage = clampPage(page, totalPages);
   const pageWindow = buildPageWindow(currentPage, totalPages);
-  const pageStart = (currentPage - 1) * pageSize;
-  const pageEnd = Math.min(currentPage * pageSize, filteredJudges.length);
-  const paginatedJudges = filteredJudges.slice(pageStart, pageEnd);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const paginatedJudges = filteredJudges.slice(pageStart, pageStart + PAGE_SIZE);
+  const notProvidedLabel = t("judge_directory_not_provided");
 
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
-    setPage(1);
-  };
-
-  const handleSortChange = (value: string) => {
-    setSortBy(value);
-    setPage(1);
-  };
-
-  const handlePageSizeChange = (value: (typeof PAGE_SIZE_OPTIONS)[number]) => {
-    setPageSize(value);
+  const resetFilters = () => {
+    setSearch("");
+    setNameFilter("");
+    setCourtFilter("");
+    setAreaFilter("");
+    setYearFrom("");
+    setYearTo("");
     setPage(1);
   };
 
   return (
-    <main className="data-page directory-page-shell">
+    <main className="data-page directory-page-shell judge-directory-page-shell">
       <div className="data-tabs">
         <NavLink to="/data/courts" end className={tabClass}>
           {t("data_tab_courts")}
@@ -155,143 +155,101 @@ export default function JudgesPage() {
         </NavLink>
       </div>
 
-      <section className="directory-head-section">
-        <div className="container directory-head-layout search-only">
-          <div className="directory-topbar">
-            <label className="directory-search-label" htmlFor="judges-search">
-              {t("judge_directory_search_label")}
-            </label>
-            <div className="directory-search-input-wrap">
-              <span className="directory-search-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M21 21L16.65 16.65M18 11C18 14.866 14.866 18 11 18C7.134 18 4 14.866 4 11C4 7.134 7.134 4 11 4C14.866 4 18 7.134 18 11Z"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
-              <input
-                id="judges-search"
-                className="directory-search-input"
-                type="text"
-                placeholder={t("judge_directory_search_placeholder")}
-                value={search}
-                onChange={(event) => handleSearchChange(event.target.value)}
-              />
-            </div>
-            <div className="directory-search-meta">
-              <span>
-                {loading
-                  ? t("judge_directory_loading_directory")
-                  : `${filteredJudges.length} ${t("judge_directory_matching_records")}`}
-              </span>
-            </div>
-          </div>
+ 
 
-          {/* <aside className="directory-filter-panel directory-filter-panel-inline">
-            <div className="directory-filter-panel-header">
+      <section className="judge-directory-section">
+        <div className="container judge-directory-layout">
+          <aside className="judge-directory-sidebar">
+            <div className="judge-directory-sidebar-header">
               <div>
-                <p className="directory-filter-eyebrow">{t("judge_directory_filter_eyebrow")}</p>
-                <h2 className="directory-filter-title">{t("judge_directory_refine_results")}</h2>
+                <h2 className="judge-directory-sidebar-title">{t("case_directory_search_criteria")}</h2>
+                <p className="judge-directory-sidebar-note">
+                  {activeFilterCount > 0
+                    ? `${activeFilterCount} ${t("case_directory_filters_active")}`
+                    : `${filteredJudges.length} ${t("judge_directory_matching_records")}`}
+                </p>
               </div>
-              <button className="directory-subtle-btn" type="button" onClick={resetFilters}>
-                {t("judge_directory_reset")}
+
+              <button
+                className={`judge-directory-sidebar-toggle${filtersExpanded ? " expanded" : ""}`}
+                type="button"
+                onClick={() => setFiltersExpanded((value) => !value)}
+                aria-expanded={filtersExpanded}
+                aria-label={t("case_directory_search_criteria")}
+              >
+                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M6 8L10 12L14 8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </button>
             </div>
 
-            <div className="directory-filter-stack">
-              <label className="directory-field">
-                <span>{t("judge_directory_name")}</span>
-                <input
-                  className="directory-field-input"
-                  type="text"
-                  placeholder={t("judge_directory_name_placeholder")}
-                  value={nameFilter}
-                  onChange={(event) => handleNameChange(event.target.value)}
-                />
-              </label>
+            {filtersExpanded ? (
+              <div className="judge-directory-sidebar-body">
+                <div className="directory-filter-stack judge-directory-filter-stack">
+                  <label className="directory-field">
+                    <span>{t("judge_directory_name")}</span>
+                    <input
+                      className="directory-field-input"
+                      type="text"
+                      placeholder={t("judge_directory_name_placeholder")}
+                      value={nameFilter}
+                      onChange={(event) => setNameFilter(event.target.value)}
+                    />
+                  </label>
 
-              <label className="directory-field">
-                <span>{t("judge_directory_area")}</span>
-                <select
-                  className="directory-field-input"
-                  value={areaFilter}
-                  onChange={(event) => handleAreaChange(event.target.value)}
-                >
-                  <option value="all">{t("judge_directory_all_areas")}</option>
-                  {areaOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  <label className="directory-field">
+                    <span>{t("case_detail_court")}</span>
+                    <input
+                      className="directory-field-input"
+                      type="text"
+                      placeholder={t("case_directory_court_placeholder")}
+                      value={courtFilter}
+                      onChange={(event) => setCourtFilter(event.target.value)}
+                    />
+                  </label>
 
-              <div className="directory-range-grid">
-                <label className="directory-field">
-                  <span>{t("judge_directory_year_from")}</span>
-                  <input
-                    className="directory-field-input"
-                    type="number"
-                    placeholder="2010"
-                    value={yearFrom}
-                    onChange={(event) => handleYearFromChange(event.target.value)}
-                  />
-                </label>
+                  <label className="directory-field">
+                    <span>{t("judge_directory_area")}</span>
+                    <input
+                      className="directory-field-input"
+                      type="text"
+                      placeholder={t("judge_directory_area")}
+                      value={areaFilter}
+                      onChange={(event) => setAreaFilter(event.target.value)}
+                    />
+                  </label>
 
-                <label className="directory-field">
-                  <span>{t("judge_directory_year_to")}</span>
-                  <input
-                    className="directory-field-input"
-                    type="number"
-                    placeholder="2026"
-                    value={yearTo}
-                    onChange={(event) => handleYearToChange(event.target.value)}
-                  />
-                </label>
+                  <div className="directory-field">
+                    <span>{t("judge_directory_year_label")}</span>
+                    <div className="directory-range-grid">
+                      <input
+                        className="directory-field-input"
+                        type="number"
+                        inputMode="numeric"
+                        placeholder={t("judge_directory_year_from")}
+                        value={yearFrom}
+                        onChange={(event) => setYearFrom(event.target.value)}
+                      />
+                      <input
+                        className="directory-field-input"
+                        type="number"
+                        inputMode="numeric"
+                        placeholder={t("judge_directory_year_to")}
+                        value={yearTo}
+                        onChange={(event) => setYearTo(event.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <button className="directory-subtle-btn judge-directory-reset-btn" type="button" onClick={resetFilters}>
+                  {t("judge_directory_reset")}
+                </button>
               </div>
-            </div>
-          </aside> */}
-        </div>
-      </section>
+            ) : null}
+          </aside>
 
-      <section className="directory-content-section">
-        <div className="container">
-          <div className="directory-results-panel">
-            <div className="directory-results-toolbar directory-results-toolbar-spaced">
-              <div className="directory-results-controls">
-                <label className="directory-inline-control">
-                  <span>{t("judge_directory_sort")}</span>
-                  <select value={sortBy} onChange={(event) => handleSortChange(event.target.value)}>
-                    <option value="name-asc">{t("judge_directory_sort_name_asc")}</option>
-                    <option value="name-desc">{t("judge_directory_sort_name_desc")}</option>
-                    <option value="area">{t("judge_directory_sort_area")}</option>
-                    <option value="year-desc">{t("judge_directory_sort_year_desc")}</option>
-                    <option value="year-asc">{t("judge_directory_sort_year_asc")}</option>
-                  </select>
-                </label>
-
-                <label className="directory-inline-control">
-                  <span>{t("judge_directory_per_page")}</span>
-                  <select
-                    value={pageSize}
-                    onChange={(event) =>
-                      handlePageSizeChange(Number(event.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])
-                    }
-                  >
-                    {PAGE_SIZE_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-            </div>
-
+          <div className="judge-directory-results">
             {loading ? (
               <div className="directory-feedback-card">
                 <h3>{t("judge_directory_loading_title")}</h3>
@@ -309,40 +267,32 @@ export default function JudgesPage() {
               </div>
             ) : (
               <>
-                <div className="directory-card-grid judges-directory-grid">
+                <div className="judge-directory-grid">
                   {paginatedJudges.map((judge) => (
                     <Link
-                      className="directory-card directory-card-link judge-directory-card"
+                      className="directory-card directory-card-link judge-directory-card judge-directory-card--reference"
                       key={judge.id}
                       to={`/data/judges/${encodeURIComponent(judge.id)}`}
                     >
-                      <div
-                        className="judge-directory-photo"
-                        style={{ backgroundImage: `url(${judge.photo})` }}
-                      />
+                      <div className="judge-directory-photo-frame">
+                        <div className="judge-directory-photo judge-directory-photo--reference" style={{ backgroundImage: `url(${judge.photo})` }} />
+                      </div>
 
-                      <div className="judge-directory-body">
-                        <div className="judge-directory-top">
-                          <span className="judge-directory-tag">{t("judge_directory_role")}</span>
-                          {judge.yearOfElection ? (
-                            <span className="judge-directory-year">
-                              {t("judge_directory_elected_short")} {judge.yearOfElection}
-                            </span>
-                          ) : null}
+                      <div className="judge-directory-body judge-directory-body--reference">
+                        <h3 className="directory-card-title judge-directory-card-title">{judge.name}</h3>
+                        <p className="judge-directory-role">{t("judge_directory_role")}</p>
+
+                     
+                        <div className="judge-directory-detail-list">
+                          <p className="judge-directory-detail-line">
+                            <span>{t("judge_directory_elected_short")}:</span> {judge.yearOfElection || notProvidedLabel}
+                          </p>
+                          <p className="judge-directory-detail-line">
+                            <span>{t("judge_directory_area_label")}:</span> {judge.area || notProvidedLabel}
+                          </p>
                         </div>
 
-                        <h3 className="directory-card-title">{judge.name}</h3>
-
-                        <div className="judge-directory-meta">
-                          <div className="judge-directory-meta-row">
-                            <span className="judge-directory-meta-label">{t("judge_directory_area_label")}</span>
-                            <span>{judge.area || t("judge_directory_not_provided")}</span>
-                          </div>
-                          <div className="judge-directory-meta-row">
-                            <span className="judge-directory-meta-label">{t("judge_directory_year_label")}</span>
-                            <span>{judge.yearOfElection || t("judge_directory_not_provided")}</span>
-                          </div>
-                        </div>
+                        
                       </div>
                     </Link>
                   ))}

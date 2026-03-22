@@ -8,6 +8,7 @@ export type Judge = {
   full_name: string;
   year_of_election: number | null;
   area_of_work: string | null;
+  primary_court?: string | null;
   status: JudgeStatus;
   photoUrl: string | null;
 };
@@ -96,6 +97,7 @@ type JudgeRow = {
   full_name: string;
   year_of_election: number | string | null;
   area_of_work: string | null;
+  primary_court?: string | null;
   role?: string;
   has_photo?: boolean;
   photo_url: string | null;
@@ -129,14 +131,16 @@ const mapJudgeRow = (row: JudgeRow): Judge => ({
   full_name: row.full_name,
   year_of_election: toNullableNumber(row.year_of_election),
   area_of_work: row.area_of_work,
+  primary_court: row.primary_court ?? null,
   status: toStatus(row),
   photoUrl: resolvePhotoUrl(row.photo_url),
 });
 
 const resolvePhotoUrl = (url: string | null): string | null => {
   if (!url) return null;
-  if (/^https?:\/\//i.test(url)) return url;
-  return new URL(url, `${API_BASE}/`).toString();
+  const resolved = /^https?:\/\//i.test(url) ? new URL(url) : new URL(url, `${API_BASE}/`);
+  resolved.searchParams.set("v", String(Date.now()));
+  return resolved.toString();
 };
 
 const mapEducationItems = (items: EducationItem[] | null | undefined) =>

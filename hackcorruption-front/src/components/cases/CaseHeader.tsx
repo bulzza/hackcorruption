@@ -18,20 +18,7 @@ export default function CaseHeader({ item }: { item: CaseItem }) {
           </div>
         </div>
 
-        <div className="cost-section">
-          <div className="cost-item">
-            <span className="cost-label">Case Cost</span>
-            <span className="cost-value">€{item.costEUR.toLocaleString()}</span>
-          </div>
-          <div className="cost-item">
-            <span className="cost-label">Duration</span>
-            <span className="cost-value">{item.durationDays} days</span>
-          </div>
-          <div className="cost-item">
-            <span className="cost-label">Area</span>
-            <span className="cost-value">{item.legalArea}</span>
-          </div>
-        </div>
+       
       </div>
     </section>
   );

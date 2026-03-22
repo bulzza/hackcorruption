@@ -38,6 +38,21 @@ type RelatedCaseCard = {
   legalArea: string;
 };
 
+type DetailField = {
+  label: string;
+  value: string;
+  fullWidth?: boolean;
+};
+
+type InsightTone = "good" | "warn" | "bad";
+
+type InsightCard = {
+  label: string;
+  value: string;
+  unit?: string;
+  tone?: InsightTone;
+};
+
 const normalizeStatus = (value: string | null | undefined) => {
   const normalized = (value ?? "").trim().toLowerCase();
   if (normalized === "active") return "Active";
@@ -66,6 +81,64 @@ const formatCurrency = (value: number | null | undefined) => {
     maximumFractionDigits: 0,
   }).format(value);
 };
+
+const normalizedLowercase = (value: string) => value.trim().toLowerCase();
+
+const parseNumericValue = (value: string) => {
+  const normalized = value.trim().replace(",", ".");
+  const parsed = Number.parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const getSeverityRatioTone = (value: string): InsightTone | undefined => {
+  const parsed = parseNumericValue(value);
+  if (parsed === null) return undefined;
+  if (parsed >= 0.85) return "bad";
+  if (parsed >= 0.5) return "warn";
+  return "good";
+};
+
+const getSentenceSeverityTone = (value: string): InsightTone | undefined => {
+  const normalized = normalizedLowercase(value);
+  if (!normalized) return undefined;
+  if (normalized === "high") return "bad";
+  if (normalized === "medium" || normalized === "moderate") return "warn";
+  if (normalized === "low" || normalized === "none") return "good";
+  return undefined;
+};
+
+const getPleaDealTone = (value: string): InsightTone | undefined => {
+  const normalized = normalizedLowercase(value);
+  if (!normalized) return undefined;
+  if (["accepted", "approved", "yes", "true"].includes(normalized)) return "good";
+  if (["rejected", "denied"].includes(normalized)) return "bad";
+  return undefined;
+};
+
+const getAppealTone = (value: string): InsightTone | undefined => {
+  const normalized = normalizedLowercase(value);
+  if (!normalized) return undefined;
+  if (["none", "no", "not filed", "not appealed"].includes(normalized)) return "good";
+  if (["filed", "pending", "yes", "appealed"].includes(normalized)) return "warn";
+  return undefined;
+};
+
+const sortTimeline = (items: NormalizedCaseDetail["timeline"]) =>
+  items
+    .map((timelineItem, index) => ({ ...timelineItem, index }))
+    .sort((left, right) => {
+      const leftTime = Date.parse(left.date || "");
+      const rightTime = Date.parse(right.date || "");
+
+      if (Number.isNaN(leftTime) && Number.isNaN(rightTime)) {
+        return left.index - right.index;
+      }
+      if (Number.isNaN(leftTime)) return 1;
+      if (Number.isNaN(rightTime)) return -1;
+      if (leftTime === rightTime) return left.index - right.index;
+      return leftTime - rightTime;
+    })
+    .map(({ index, ...timelineItem }) => timelineItem);
 
 const normalizeCaseDetail = (item: CaseDetail): NormalizedCaseDetail => ({
   id: item.id,
@@ -188,40 +261,53 @@ export default function CaseDetailPage() {
     return t("status_unknown");
   };
 
-  const overviewItems = useMemo(
+  const detailItems = useMemo<DetailField[]>(
     () =>
       item
         ? [
-            { label: t("case_detail_court"), value: item.court },
-            { label: t("case_detail_judge"), value: item.judge },
-            { label: t("case_detail_legal_area"), value: item.legalArea },
-            { label: t("case_detail_decision_date"), value: formatDisplayDate(item.decisionDate) },
             { label: t("case_detail_case_type"), value: item.caseType },
             { label: t("case_detail_case_subtype"), value: item.caseSubtype },
             { label: t("case_detail_basis_type"), value: item.basisType },
             { label: t("case_detail_basis"), value: item.basis },
-            { label: t("case_detail_articles"), value: item.articles },
-            { label: t("case_detail_public_prosecutor_case"), value: item.publicProsecutorCase },
+            { label: t("case_detail_articles"), value: item.articles, fullWidth: true },
+            {
+              label: t("case_detail_public_prosecutor_case"),
+              value: item.publicProsecutorCase,
+              fullWidth: true,
+            },
           ]
         : [],
     [item, t]
   );
 
-  const insightItems = useMemo(
+  const insightCards = useMemo<InsightCard[]>(
     () =>
       item
         ? [
-            { label: t("case_detail_case_cost"), value: item.caseCost },
-            { label: t("case_detail_total_case_cost"), value: item.totalCaseCost },
             { label: t("case_detail_mitigating_factors"), value: item.mitigatingFactors },
-            { label: t("case_detail_plea_deal"), value: item.pleaDeal },
-            { label: t("case_detail_duration"), value: item.durationDays ? `${item.durationDays} ${t("case_detail_days")}` : "" },
-            { label: t("case_detail_severity_ratio"), value: item.severityRatio },
-            { label: t("case_detail_sentence_severity"), value: item.sentenceSeverity },
-            { label: t("case_detail_appeal"), value: item.appeal },
+            { label: t("case_detail_plea_deal"), value: item.pleaDeal, tone: getPleaDealTone(item.pleaDeal) },
+            { label: t("case_detail_duration"), value: item.durationDays, unit: item.durationDays ? t("case_detail_days") : undefined },
+            {
+              label: t("case_detail_severity_ratio"),
+              value: item.severityRatio,
+              tone: getSeverityRatioTone(item.severityRatio),
+            },
+            {
+              label: t("case_detail_sentence_severity"),
+              value: item.sentenceSeverity,
+              tone: getSentenceSeverityTone(item.sentenceSeverity),
+            },
+            { label: t("case_detail_appeal"), value: item.appeal, tone: getAppealTone(item.appeal) },
           ]
         : [],
     [item, t]
+  );
+
+  const timelineItems = useMemo(() => (item ? sortTimeline(item.timeline) : []), [item]);
+
+  const headerMeta = useMemo(
+    () => (item ? [item.court, item.judge, item.legalArea].filter((value) => value.trim() !== "") : []),
+    [item]
   );
 
   if (loading) {
@@ -251,6 +337,9 @@ export default function CaseDetailPage() {
     );
   }
 
+  const notProvidedLabel = t("case_detail_not_provided");
+  const formattedDecisionDate = formatDisplayDate(item.decisionDate) || notProvidedLabel;
+
   return (
     <main className="data-page case-detail-page-shell">
       <div className="container case-detail-backbar">
@@ -259,94 +348,144 @@ export default function CaseDetailPage() {
         </Link>
       </div>
 
-      <section className="case-detail-hero-section">
-        <div className="container case-detail-hero">
-          <div className="case-detail-hero-main">
-            <div className="case-detail-status-row">
-              <span className={`case-detail-status ${item.status.toLowerCase()}`}>{getStatusLabel(item.status)}</span>
-              <span className="case-detail-date">{formatDisplayDate(item.decisionDate) || t("case_detail_not_provided")}</span>
-            </div>
-            <h1 className="case-detail-title">{item.id}</h1>
-            <p className="case-detail-subtitle">
-              <span>{item.court || t("case_detail_not_provided")}</span>
-              <span>{item.legalArea || t("case_detail_not_provided")}</span>
-            </p>
-            <p className="case-detail-summary">{item.summary || t("case_detail_not_provided")}</p>
+      <section className="container case-detail-reference-header">
+        <div className="case-detail-reference-record-row">
+          <h1 className="case-detail-reference-record">{item.id}</h1>
+          <div className="case-detail-reference-badges">
+            <span className={`case-detail-status ${item.status.toLowerCase()}`}>{getStatusLabel(item.status)}</span>
+            <span className="case-detail-date">{formattedDecisionDate}</span>
           </div>
-
-          <div className="case-detail-overview-card">
-            <div className="case-detail-overview-head">{t("case_detail_overview")}</div>
-            <div className="case-detail-overview-grid">
-              {overviewItems.map((entry) => (
-                <div className="case-detail-overview-item" key={entry.label}>
-                  <span className="case-detail-overview-label">{entry.label}</span>
-                  <span className="case-detail-overview-value">{entry.value || t("case_detail_not_provided")}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+        </div>
+        <div className="case-detail-reference-meta">
+          {headerMeta.length === 0 ? (
+            <span>{notProvidedLabel}</span>
+          ) : (
+            headerMeta.map((entry, index) => <span key={`${entry}-${index}`}>{entry}</span>)
+          )}
         </div>
       </section>
 
-      <div className="container case-detail-content">
-        <section className="case-detail-section">
-          <div className="case-detail-section-head">
-            <h2 className="case-detail-section-title">{t("case_detail_key_insights")}</h2>
-          </div>
-          <div className="case-detail-insights-grid">
-            {insightItems.map((entry) => (
-              <div className="case-detail-insight-card" key={entry.label}>
-                <span className="case-detail-insight-label">{entry.label}</span>
-                <strong className="case-detail-insight-value">{entry.value || t("case_detail_not_provided")}</strong>
+      <div className="container case-detail-reference-layout">
+        <div className="case-detail-reference-column">
+          <section className="case-detail-reference-section">
+            <div className="case-detail-reference-section-head">
+              <h2 className="case-detail-reference-section-title">{t("case_detail_case_summary")}</h2>
+            </div>
+            <div className="case-detail-reference-card case-detail-reference-summary">
+              {item.summary || notProvidedLabel}
+            </div>
+          </section>
+
+          <section className="case-detail-reference-section">
+            <div className="case-detail-reference-section-head">
+              <h2 className="case-detail-reference-section-title">{t("case_detail_case_details")}</h2>
+            </div>
+            <div className="case-detail-reference-card">
+              <div className="case-detail-reference-details-grid">
+                {detailItems.map((entry) => (
+                  <div
+                    className={`case-detail-reference-detail${entry.fullWidth ? " case-detail-reference-detail--wide" : ""}`}
+                    key={entry.label}
+                  >
+                    <span className="case-detail-reference-label">{entry.label}</span>
+                    <span className="case-detail-reference-value">{entry.value || notProvidedLabel}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </section>
+            </div>
+          </section>
+        </div>
 
-        <section className="case-detail-section">
-          <div className="case-detail-section-head">
-            <h2 className="case-detail-section-title">{t("case_detail_timeline")}</h2>
-          </div>
-          <div className="case-detail-timeline">
-            {item.timeline.length === 0 ? (
-              <div className="case-detail-empty">{t("case_detail_no_timeline")}</div>
-            ) : (
-              item.timeline.map((timelineItem, index) => (
-                <div className="case-detail-timeline-item" key={`${timelineItem.date}-${index}`}>
-                  <div className="case-detail-timeline-date">
-                    {formatDisplayDate(timelineItem.date) || t("case_detail_not_provided")}
-                  </div>
-                  <div className="case-detail-timeline-name">{timelineItem.name || t("case_detail_not_provided")}</div>
+        <div className="case-detail-reference-column case-detail-reference-column--side">
+          <section className="case-detail-reference-section">
+            <div className="case-detail-reference-section-head">
+              <h2 className="case-detail-reference-section-title">{t("case_detail_key_insights")}</h2>
+            </div>
+            <div className="case-detail-reference-card case-detail-reference-cost-card">
+              <div className="case-detail-reference-cost">
+                <span className="case-detail-reference-cost-label">{t("case_detail_case_cost")}</span>
+                <strong className="case-detail-reference-cost-value">{item.caseCost || notProvidedLabel}</strong>
+              </div>
+              <div className="case-detail-reference-cost case-detail-reference-cost--right">
+                <span className="case-detail-reference-cost-label">{t("case_detail_total_case_cost")}</span>
+                <strong className="case-detail-reference-cost-value">{item.totalCaseCost || notProvidedLabel}</strong>
+              </div>
+            </div>
+
+            <div className="case-detail-reference-kpi-grid">
+              {insightCards.map((entry) => (
+                <div className="case-detail-reference-card case-detail-reference-kpi-card" key={entry.label}>
+                  <strong
+                    className={`case-detail-reference-kpi-value${
+                      entry.tone ? ` case-detail-reference-kpi-value--${entry.tone}` : ""
+                    }`}
+                  >
+                    {entry.value || notProvidedLabel}
+                  </strong>
+                  {entry.unit && entry.value ? (
+                    <span className="case-detail-reference-kpi-unit">{entry.unit}</span>
+                  ) : null}
+                  <span className="case-detail-reference-kpi-label-row">
+                    <span className="case-detail-reference-label">{entry.label}</span>
+                    <span aria-hidden="true" className="kpi-info-icon" title={entry.label}>
+                      ?
+                    </span>
+                  </span>
                 </div>
-              ))
-            )}
-          </div>
-        </section>
-
-        <section className="case-detail-section">
-          <div className="case-detail-section-head">
-            <h2 className="case-detail-section-title">{t("case_detail_related_cases")}</h2>
-          </div>
-          {relatedCases.length === 0 ? (
-            <div className="case-detail-empty">{t("case_detail_no_related_cases")}</div>
-          ) : (
-            <div className="case-detail-related-grid">
-              {relatedCases.map((related) => (
-                <article className="case-detail-related-card" key={related.recordKey}>
-                  <Link className="case-detail-related-title" to={`/data/cases/${encodeURIComponent(related.id)}`}>
-                    {related.id}
-                  </Link>
-                  <div className="case-detail-related-meta">
-                    <span>{related.court || t("case_detail_not_provided")}</span>
-                    <span>{related.judge || t("case_detail_not_provided")}</span>
-                    <span>{formatDisplayDate(related.decisionDate) || t("case_detail_not_provided")}</span>
-                  </div>
-                </article>
               ))}
             </div>
-          )}
-        </section>
+          </section>
+
+          <section className="case-detail-reference-section">
+            <div className="case-detail-reference-section-head">
+              <h2 className="case-detail-reference-section-title">{t("case_detail_timeline")}</h2>
+            </div>
+            {timelineItems.length === 0 ? (
+              <div className="case-detail-reference-empty">{t("case_detail_no_timeline")}</div>
+            ) : (
+              <div className="case-detail-reference-timeline timeline">
+                {timelineItems.map((timelineItem, index) => (
+                  <div className="timeline-item" key={`${timelineItem.date}-${index}`}>
+                    <div className="timeline-marker">
+                      <div className={`timeline-dot ${index === timelineItems.length - 1 ? "active" : ""}`} />
+                      {index !== timelineItems.length - 1 ? <div className="timeline-line" /> : null}
+                    </div>
+
+                    <div className="timeline-content">
+                      <div className="timeline-date">{formatDisplayDate(timelineItem.date) || notProvidedLabel}</div>
+                      <div className="timeline-title">{timelineItem.name || notProvidedLabel}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
       </div>
+
+      <section className="container case-detail-reference-related">
+        <div className="case-detail-reference-section-head">
+          <h2 className="case-detail-reference-section-title">{t("case_detail_related_cases")}</h2>
+        </div>
+        {relatedCases.length === 0 ? (
+          <div className="case-detail-reference-empty">{t("case_detail_no_related_cases")}</div>
+        ) : (
+          <div className="case-detail-reference-related-grid">
+            {relatedCases.map((related) => (
+              <article className="case-detail-reference-card case-detail-reference-related-card" key={related.recordKey}>
+                <Link className="case-detail-reference-related-title" to={`/data/cases/${encodeURIComponent(related.id)}`}>
+                  {related.id}
+                </Link>
+                <div className="case-detail-reference-related-meta">
+                  <span>{related.court || notProvidedLabel}</span>
+                  <span>{related.judge || notProvidedLabel}</span>
+                  <span>{formatDisplayDate(related.decisionDate) || notProvidedLabel}</span>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
     </main>
   );
 }

@@ -492,19 +492,40 @@ function judges_list(PDO $pdo): array
     $columns = judge_columns($pdo);
     $select = "
         SELECT
-            id,
-            slug,
-            full_name,
-            year_of_election,
-            area_of_work,
-            role,
-            (photo IS NOT NULL) AS has_photo";
+            j.id,
+            j.slug,
+            j.full_name,
+            j.year_of_election,
+            j.area_of_work,
+            j.role,
+            COALESCE(
+                (
+                    SELECT jc.court
+                    FROM judge_cases jc
+                    WHERE jc.judge_id = j.id
+                      AND jc.court IS NOT NULL
+                      AND jc.court <> ''
+                    ORDER BY jc.filing_date DESC, jc.case_id ASC
+                    LIMIT 1
+                ),
+                (
+                    SELECT c.name
+                    FROM court_cases cc
+                    INNER JOIN courts c ON c.id = cc.court_id
+                    WHERE cc.judge_name = j.full_name
+                      AND c.name IS NOT NULL
+                      AND c.name <> ''
+                    ORDER BY cc.filing_date DESC, cc.id DESC
+                    LIMIT 1
+                )
+            ) AS primary_court,
+            (j.photo IS NOT NULL) AS has_photo";
     if ($columns['is_active']) {
-        $select .= ", is_active";
+        $select .= ", j.is_active";
     } else {
         $select .= ", 1 AS is_active";
     }
-    $select .= " FROM judges ORDER BY full_name ASC";
+    $select .= " FROM judges j ORDER BY j.full_name ASC";
 
     $stmt = $pdo->query($select);
     return $stmt->fetchAll() ?: [];

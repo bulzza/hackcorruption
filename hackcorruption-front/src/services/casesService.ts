@@ -12,6 +12,15 @@ export type Case = {
   source: "registry" | "court_file";
   court_slug: string | null;
   case_status: string | null;
+  case_type?: string | null;
+  case_subtype?: string | null;
+  basis_type?: string | null;
+  basis?: string | null;
+  articles?: string | null;
+  public_prosecutor_case?: string | null;
+  case_cost?: number | null;
+  total_case_cost?: number | null;
+  download_link?: string | null;
   can_edit: boolean;
   can_delete: boolean;
 };
@@ -112,6 +121,15 @@ type CaseRow = {
   source?: "registry" | "court_file" | null;
   court_slug?: string | null;
   case_status?: string | null;
+  case_type?: string | null;
+  case_subtype?: string | null;
+  basis_type?: string | null;
+  basis?: string | null;
+  articles?: string | null;
+  public_prosecutor_case?: string | null;
+  case_cost?: number | string | null;
+  total_case_cost?: number | string | null;
+  download_link?: string | null;
   can_edit?: boolean | number | null;
   can_delete?: boolean | number | null;
 };
@@ -141,6 +159,15 @@ const mapCaseRow = (row: CaseRow): Case => ({
   source: row.source === "court_file" ? "court_file" : "registry",
   court_slug: row.court_slug ?? null,
   case_status: row.case_status ?? null,
+  case_type: row.case_type ?? null,
+  case_subtype: row.case_subtype ?? null,
+  basis_type: row.basis_type ?? null,
+  basis: row.basis ?? null,
+  articles: row.articles ?? null,
+  public_prosecutor_case: row.public_prosecutor_case ?? null,
+  case_cost: toNullableNumber(row.case_cost ?? null),
+  total_case_cost: toNullableNumber(row.total_case_cost ?? null),
+  download_link: row.download_link ?? null,
   can_edit: Number(row.can_edit ?? 1) === 1,
   can_delete: Number(row.can_delete ?? 1) === 1,
 });

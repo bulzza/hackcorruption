@@ -4,25 +4,13 @@ import ConfirmDialog from "../judges/ConfirmDialog";
 import { listCourts, toggleCourtStatus } from "../../services/courtsService";
 import type { Court } from "../../services/courtsService";
 
-const DEFAULT_PAGE_SIZE = 6;
-const PAGE_SIZE_OPTIONS = [6, 12, 24];
-
-function getVisiblePages(currentPage: number, totalPages: number) {
-  const windowSize = 5;
-  if (totalPages <= windowSize) {
-    return Array.from({ length: totalPages }, (_, index) => index + 1);
-  }
-
-  const start = Math.max(1, Math.min(currentPage - 2, totalPages - windowSize + 1));
-  return Array.from({ length: windowSize }, (_, index) => start + index);
-}
+const pageSize = 6;
 
 export default function DashboardCourtsList() {
   const [courts, setCourts] = useState<Court[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [page, setPage] = useState(1);
   const [confirmTarget, setConfirmTarget] = useState<Court | null>(null);
 
@@ -42,7 +30,7 @@ export default function DashboardCourtsList() {
 
   useEffect(() => {
     setPage(1);
-  }, [pageSize, search, statusFilter]);
+  }, [search, statusFilter]);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -65,7 +53,6 @@ export default function DashboardCourtsList() {
   const pageRows = filtered.slice(pageStart, pageStart + pageSize);
   const showingFrom = filtered.length === 0 ? 0 : pageStart + 1;
   const showingTo = filtered.length === 0 ? 0 : Math.min(pageStart + pageRows.length, filtered.length);
-  const visiblePages = getVisiblePages(page, totalPages);
   const hasActiveFilters = search.trim().length > 0 || statusFilter !== "All";
 
   useEffect(() => {
@@ -75,7 +62,6 @@ export default function DashboardCourtsList() {
   const resetFilters = () => {
     setSearch("");
     setStatusFilter("All");
-    setPageSize(DEFAULT_PAGE_SIZE);
     setPage(1);
   };
 
@@ -141,25 +127,11 @@ export default function DashboardCourtsList() {
           <div className="admin-toolbar-meta">
             Showing {showingFrom}-{showingTo} of {filtered.length} courts
           </div>
-          <label className="admin-form-field admin-form-field-sm">
-            <span>Rows</span>
-            <select
-              className="admin-input"
-              value={pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
-            >
-              {PAGE_SIZE_OPTIONS.map((size) => (
-                <option key={size} value={size}>
-                  {size} per page
-                </option>
-              ))}
-            </select>
-          </label>
           <button
             className="admin-btn ghost"
             type="button"
             onClick={resetFilters}
-            disabled={!hasActiveFilters && pageSize === DEFAULT_PAGE_SIZE}
+            disabled={!hasActiveFilters}
           >
             Reset filters
           </button>
@@ -257,53 +229,25 @@ export default function DashboardCourtsList() {
 
       {!loading && filtered.length > 0 && (
         <div className="admin-pagination">
+          <button
+            className="admin-btn ghost"
+            type="button"
+            disabled={page === 1}
+            onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+          >
+            Previous
+          </button>
           <span>
             Page {page} of {totalPages}
           </span>
-          <div className="admin-pagination-group">
-            <button
-              className="admin-btn ghost"
-              type="button"
-              disabled={page === 1}
-              onClick={() => setPage(1)}
-            >
-              First
-            </button>
-            <button
-              className="admin-btn ghost"
-              type="button"
-              disabled={page === 1}
-              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-            >
-              Previous
-            </button>
-            {visiblePages.map((pageNumber) => (
-              <button
-                key={pageNumber}
-                className={`admin-btn ${pageNumber === page ? "secondary" : "ghost"}`}
-                type="button"
-                onClick={() => setPage(pageNumber)}
-              >
-                {pageNumber}
-              </button>
-            ))}
-            <button
-              className="admin-btn ghost"
-              type="button"
-              disabled={page === totalPages}
-              onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-            >
-              Next
-            </button>
-            <button
-              className="admin-btn ghost"
-              type="button"
-              disabled={page === totalPages}
-              onClick={() => setPage(totalPages)}
-            >
-              Last
-            </button>
-          </div>
+          <button
+            className="admin-btn ghost"
+            type="button"
+            disabled={page === totalPages}
+            onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+          >
+            Next
+          </button>
         </div>
       )}
 

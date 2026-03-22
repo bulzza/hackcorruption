@@ -1,10 +1,10 @@
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useI18n } from "../../i18n/useI18n";
 import { listCourts } from "../../services/courtsService";
-import type { Court, CourtStatus } from "../../services/courtsService";
+import type { Court } from "../../services/courtsService";
 
-const PAGE_SIZE_OPTIONS = [6, 9, 12] as const;
+const PAGE_SIZE = 9;
 
 const tabClass = ({ isActive }: { isActive: boolean }) => `tab-btn${isActive ? " active" : ""}`;
 
@@ -17,56 +17,12 @@ type CourtCard = {
   phones: string[];
   jurisdiction: string;
   website: string;
-  websiteLabel: string;
-  status: CourtStatus;
-  searchIndex: string;
 };
 
-const formatWebsite = (value: string | null | undefined) => {
-  const raw = (value ?? "").trim();
-  if (!raw) {
-    return { href: "", label: "" };
-  }
+const normalizeText = (value: string | null | undefined) => (value ?? "").trim();
 
-  const href = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
-
-  try {
-    const url = new URL(href);
-    return {
-      href,
-      label: url.hostname.replace(/^www\./i, ""),
-    };
-  } catch {
-    return {
-      href,
-      label: raw,
-    };
-  }
-};
-
-const mapApiCourtToCard = (court: Court): CourtCard => {
-  const website = formatWebsite(court.website);
-  const address = court.address?.trim() || "";
-  const jurisdiction = court.jurisdiction?.trim() || "";
-  const type = court.type?.trim() || "Court";
-  const phones = court.phones.filter((phone) => phone.trim() !== "");
-
-  return {
-    id: String(court.id),
-    slug: court.slug || String(court.id),
-    name: court.name?.trim() || "Unnamed court",
-    type,
-    address,
-    phones,
-    jurisdiction,
-    website: website.href,
-    websiteLabel: website.label,
-    status: court.status,
-    searchIndex: [court.name, type, address, jurisdiction, phones.join(" "), website.label]
-      .join(" ")
-      .toLowerCase(),
-  };
-};
+const matchesTextFilter = (source: string, filter: string) =>
+  filter.trim() === "" || source.toLowerCase().includes(filter.trim().toLowerCase());
 
 const clampPage = (page: number, totalPages: number) => {
   if (totalPages <= 0) return 1;
@@ -82,22 +38,35 @@ const buildPageWindow = (currentPage: number, totalPages: number) => {
   return Array.from({ length: 5 }, (_, index) => start + index);
 };
 
+const formatWebsite = (value: string | null | undefined) => {
+  const raw = (value ?? "").trim();
+  if (!raw) return "";
+  if (/^https?:\/\//i.test(raw)) return raw;
+  return `https://${raw}`;
+};
+
+const mapApiCourtToCard = (court: Court): CourtCard => ({
+  id: String(court.id),
+  slug: court.slug || String(court.id),
+  name: normalizeText(court.name) || "Unnamed court",
+  type: normalizeText(court.type),
+  address: normalizeText(court.address),
+  phones: court.phones.map((phone) => phone.trim()).filter(Boolean),
+  jurisdiction: normalizeText(court.jurisdiction),
+  website: formatWebsite(court.website),
+});
+
 export default function CourtsPage() {
   const { t } = useI18n();
   const [courts, setCourts] = useState<CourtCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filtersExpanded, setFiltersExpanded] = useState(true);
 
-  const [search, setSearch] = useState("");
-  const [courtName] = useState("");
-  const [typeFilter] = useState("all");
-  const [jurisdictionFilter] = useState("all");
-  const [statusFilter] = useState<"all" | CourtStatus>("all");
-  const [sortBy, setSortBy] = useState("name-asc");
-  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(6);
+  const [courtNameFilter, setCourtNameFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [jurisdictionFilter, setJurisdictionFilter] = useState("");
   const [page, setPage] = useState(1);
-
-  const deferredSearch = useDeferredValue(search);
 
   useEffect(() => {
     let mounted = true;
@@ -122,56 +91,40 @@ export default function CourtsPage() {
     };
   }, []);
 
-  const filteredCourts = useMemo(() => {
-    const query = deferredSearch.trim().toLowerCase();
-    const nameQuery = courtName.trim().toLowerCase();
+  useEffect(() => {
+    setPage(1);
+  }, [courtNameFilter, jurisdictionFilter, typeFilter]);
 
-    const next = courts.filter((court) => {
-      if (query && !court.searchIndex.includes(query)) return false;
-      if (nameQuery && !court.name.toLowerCase().includes(nameQuery)) return false;
-      if (typeFilter !== "all" && court.type !== typeFilter) return false;
-      if (jurisdictionFilter !== "all" && court.jurisdiction !== jurisdictionFilter) return false;
-      if (statusFilter !== "all" && court.status !== statusFilter) return false;
-      return true;
-    });
+  const filteredCourts = useMemo(
+    () =>
+      courts.filter((court) => {
+        if (!matchesTextFilter(court.name, courtNameFilter)) return false;
+        if (!matchesTextFilter(court.type, typeFilter)) return false;
+        if (!matchesTextFilter(court.jurisdiction, jurisdictionFilter)) return false;
+        return true;
+      }),
+    [courtNameFilter, courts, jurisdictionFilter, typeFilter]
+  );
 
-    next.sort((left, right) => {
-      if (sortBy === "name-desc") return right.name.localeCompare(left.name);
-      if (sortBy === "jurisdiction") return left.jurisdiction.localeCompare(right.jurisdiction);
-      if (sortBy === "status") return left.status.localeCompare(right.status) || left.name.localeCompare(right.name);
-      return left.name.localeCompare(right.name);
-    });
-
-    return next;
-  }, [courts, courtName, deferredSearch, jurisdictionFilter, sortBy, statusFilter, typeFilter]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredCourts.length / pageSize));
+  const activeFilterCount = [courtNameFilter, typeFilter, jurisdictionFilter].filter(
+    (value) => value.trim() !== ""
+  ).length;
+  const totalPages = Math.max(1, Math.ceil(filteredCourts.length / PAGE_SIZE));
   const currentPage = clampPage(page, totalPages);
   const pageWindow = buildPageWindow(currentPage, totalPages);
-  const pageStart = (currentPage - 1) * pageSize;
-  const pageEnd = Math.min(currentPage * pageSize, filteredCourts.length);
-  const paginatedCourts = filteredCourts.slice(pageStart, pageEnd);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const paginatedCourts = filteredCourts.slice(pageStart, pageStart + PAGE_SIZE);
+  const notProvidedLabel = t("court_detail_not_provided");
 
-  const getStatusLabel = (status: CourtStatus) =>
-    status === "Active" ? t("status_active") : t("status_inactive");
-
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
-    setPage(1);
-  };
-
-  const handleSortChange = (value: string) => {
-    setSortBy(value);
-    setPage(1);
-  };
-
-  const handlePageSizeChange = (value: (typeof PAGE_SIZE_OPTIONS)[number]) => {
-    setPageSize(value);
+  const resetFilters = () => {
+    setCourtNameFilter("");
+    setTypeFilter("");
+    setJurisdictionFilter("");
     setPage(1);
   };
 
   return (
-    <main className="data-page courts-page-shell">
+    <main className="data-page courts-page-shell court-directory-page-shell">
       <div className="data-tabs">
         <NavLink to="/data/courts" end className={tabClass}>
           {t("data_tab_courts")}
@@ -184,153 +137,87 @@ export default function CourtsPage() {
         </NavLink>
       </div>
 
-      <section className="directory-head-section">
-        <div className="container directory-head-layout search-only">
-          <div className="directory-topbar">
-            <label className="directory-search-label" htmlFor="courts-search">
-              {t("court_directory_search_label")}
-            </label>
-            <div className="directory-search-input-wrap">
-              <span className="directory-search-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none">
+      <section className="court-directory-reference-section">
+        <div className="container court-directory-reference-layout">
+          <aside className="court-directory-reference-sidebar">
+            <div className="court-directory-reference-sidebar-header">
+              <div>
+                <h2 className="court-directory-reference-sidebar-title">{t("case_directory_search_criteria")}</h2>
+                <p className="court-directory-reference-sidebar-note">
+                  {activeFilterCount > 0
+                    ? `${activeFilterCount} ${t("case_directory_filters_active")}`
+                    : `${filteredCourts.length} ${t("court_directory_matching_records")}`}
+                </p>
+              </div>
+
+              <button
+                className={`court-directory-reference-sidebar-toggle${filtersExpanded ? " expanded" : ""}`}
+                type="button"
+                onClick={() => setFiltersExpanded((value) => !value)}
+                aria-expanded={filtersExpanded}
+                aria-label={t("case_directory_search_criteria")}
+              >
+                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
                   <path
-                    d="M21 21L16.65 16.65M18 11C18 14.866 14.866 18 11 18C7.134 18 4 14.866 4 11C4 7.134 7.134 4 11 4C14.866 4 18 7.134 18 11Z"
+                    d="M6 8L10 12L14 8"
                     stroke="currentColor"
                     strokeWidth="1.8"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
                 </svg>
-              </span>
-              <input
-                id="courts-search"
-                className="directory-search-input"
-                type="text"
-                placeholder={t("court_directory_search_placeholder")}
-                value={search}
-                onChange={(event) => handleSearchChange(event.target.value)}
-              />
-              {search ? (
-                <button className="directory-subtle-btn directory-search-clear-btn" type="button" onClick={() => handleSearchChange("")}>
-                  {t("court_directory_reset")}
-                </button>
-              ) : null}
-            </div>
-
-            <div className="directory-search-meta">
-              <span>
-                {loading
-                  ? t("court_directory_loading_directory")
-                  : `${filteredCourts.length} ${t("court_directory_matching_records")}`}
-              </span>
-            </div>
-          </div>
-
-          {/* <aside className="directory-filter-panel directory-filter-panel-inline">
-            <div className="directory-filter-panel-header">
-              <div>
-                <p className="directory-filter-eyebrow">{t("court_directory_filter_eyebrow")}</p>
-                <h2 className="directory-filter-title">{t("court_directory_refine_results")}</h2>
-              </div>
-              <button className="directory-subtle-btn" type="button" onClick={resetFilters}>
-                {t("court_directory_reset")}
               </button>
             </div>
 
-            <div className="directory-filter-stack">
-              <label className="directory-field">
-                <span>{t("court_directory_court_name")}</span>
-                <input
-                  className="directory-field-input"
-                  type="text"
-                  placeholder={t("court_directory_court_name_placeholder")}
-                  value={courtName}
-                  onChange={(event) => handleCourtNameChange(event.target.value)}
-                />
-              </label>
+            {filtersExpanded ? (
+              <div className="court-directory-reference-sidebar-body">
+                <div className="directory-filter-stack court-directory-reference-filter-stack">
+                  <label className="directory-field">
+                    <span>{t("court_directory_court_name")}</span>
+                    <input
+                      className="directory-field-input"
+                      type="text"
+                      placeholder={t("court_directory_court_name_placeholder")}
+                      value={courtNameFilter}
+                      onChange={(event) => setCourtNameFilter(event.target.value)}
+                    />
+                  </label>
 
-              <label className="directory-field">
-                <span>{t("court_directory_court_type")}</span>
-                <select
-                  className="directory-field-input"
-                  value={typeFilter}
-                  onChange={(event) => handleTypeFilterChange(event.target.value)}
+                  <label className="directory-field">
+                    <span>{t("court_directory_court_type")}</span>
+                    <input
+                      className="directory-field-input"
+                      type="text"
+                      placeholder={t("court_directory_court_type")}
+                      value={typeFilter}
+                      onChange={(event) => setTypeFilter(event.target.value)}
+                    />
+                  </label>
+
+                  <label className="directory-field">
+                    <span>{t("court_directory_jurisdiction")}</span>
+                    <input
+                      className="directory-field-input"
+                      type="text"
+                      placeholder={t("court_directory_jurisdiction")}
+                      value={jurisdictionFilter}
+                      onChange={(event) => setJurisdictionFilter(event.target.value)}
+                    />
+                  </label>
+                </div>
+
+                <button
+                  className="directory-subtle-btn court-directory-reference-reset-btn"
+                  type="button"
+                  onClick={resetFilters}
                 >
-                  <option value="all">{t("court_directory_all_court_types")}</option>
-                  {typeOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="directory-field">
-                <span>{t("court_directory_jurisdiction")}</span>
-                <select
-                  className="directory-field-input"
-                  value={jurisdictionFilter}
-                  onChange={(event) => handleJurisdictionFilterChange(event.target.value)}
-                >
-                  <option value="all">{t("court_directory_all_jurisdictions")}</option>
-                  {jurisdictionOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="directory-field">
-                <span>{t("court_directory_status")}</span>
-                <select
-                  className="directory-field-input"
-                  value={statusFilter}
-                  onChange={(event) => handleStatusFilterChange(event.target.value as "all" | CourtStatus)}
-                >
-                  <option value="all">{t("court_directory_all_statuses")}</option>
-                  <option value="Active">{t("status_active")}</option>
-                  <option value="Inactive">{t("status_inactive")}</option>
-                </select>
-              </label>
-            </div>
-          </aside> */}
-        </div>
-      </section>
-
-      <section className="directory-content-section">
-        <div className="container">
-          <div className="directory-results-panel">
-            <div className="directory-results-toolbar  directory-results-toolbar-spaced">
-              <div className="directory-results-controls">
-                <label className="directory-inline-control">
-                  <span>{t("court_directory_sort")}</span>
-                  <select value={sortBy} onChange={(event) => handleSortChange(event.target.value)}>
-                    <option value="name-asc">{t("court_directory_sort_name_asc")}</option>
-                    <option value="name-desc">{t("court_directory_sort_name_desc")}</option>
-                    <option value="jurisdiction">{t("court_directory_sort_jurisdiction")}</option>
-                    <option value="status">{t("court_directory_sort_status")}</option>
-                  </select>
-                </label>
-
-                <label className="directory-inline-control">
-                  <span>{t("court_directory_per_page")}</span>
-                  <select
-                    value={pageSize}
-                    onChange={(event) =>
-                      handlePageSizeChange(Number(event.target.value) as (typeof PAGE_SIZE_OPTIONS)[number])
-                    }
-                  >
-                    {PAGE_SIZE_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                  {t("court_directory_reset")}
+                </button>
               </div>
-            </div>
+            ) : null}
+          </aside>
 
+          <div className="court-directory-reference-results">
             {loading ? (
               <div className="directory-feedback-card">
                 <h3>{t("court_directory_loading_title")}</h3>
@@ -348,71 +235,78 @@ export default function CourtsPage() {
               </div>
             ) : (
               <>
-                <div className="directory-card-grid courts-directory-grid">
-                  {paginatedCourts.map((court) => (
-                    <Link
-                      className="directory-card directory-card-link court-directory-card"
-                      key={court.slug}
-                      to={`/data/courts/${encodeURIComponent(court.slug)}`}
-                    >
-                      <div className="court-directory-card-top">
-                        <span className="court-directory-tag">{court.type}</span>
-                        <span className={`court-directory-status ${court.status.toLowerCase()}`}>
-                          {getStatusLabel(court.status)}
-                        </span>
-                      </div>
+                <div className="court-directory-reference-grid">
+                  {paginatedCourts.map((court) => {
+                    const profileHref = `/data/courts/${encodeURIComponent(court.slug)}`;
 
-                      <h3 className="court-directory-name">{court.name}</h3>
+                    return (
+                      <article className="directory-card court-reference-card" key={court.slug}>
+                        <div className="court-reference-card-body">
+                          <span className="court-reference-type">{court.type || notProvidedLabel}</span>
 
-                      <p className="court-directory-summary">{court.jurisdiction}</p>
+                          <h3 className="court-reference-title">
+                            <Link to={profileHref}>{court.name}</Link>
+                          </h3>
 
-                      <div className="court-directory-meta">
-                        <div className="court-directory-row">
-                          <span className="court-directory-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none">
-                              <path
-                                d="M12 21s7-7 7-12a7 7 0 10-14 0c0 5 7 12 7 12z"
-                                stroke="currentColor"
-                                strokeWidth="1.6"
-                              />
-                              <circle cx="12" cy="9" r="2.5" stroke="currentColor" strokeWidth="1.6" />
-                            </svg>
-                          </span>
-                          <span>{court.address || t("court_detail_not_provided")}</span>
+                          <div className="court-reference-meta">
+                            <div className="court-reference-row">
+                              <span className="court-reference-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                  <path
+                                    d="M12 21s6-5.4 6-10.2A6 6 0 106 10.8C6 15.6 12 21 12 21z"
+                                    stroke="currentColor"
+                                    strokeWidth="1.6"
+                                  />
+                                  <circle cx="12" cy="10.5" r="2.2" stroke="currentColor" strokeWidth="1.6" />
+                                </svg>
+                              </span>
+                              <span>{court.address || notProvidedLabel}</span>
+                            </div>
+
+                            <div className="court-reference-row">
+                              <span className="court-reference-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                  <path
+                                    d="M4 5.5C4 4.67 4.67 4 5.5 4h2.1c.5 0 .95.31 1.1.79l.7 2.1c.12.38 0 .8-.29 1.06l-1.05.95a12.3 12.3 0 006.89 6.89l.95-1.05c.26-.29.68-.41 1.06-.29l2.1.7c.48.15.79.6.79 1.1v2.1c0 .83-.67 1.5-1.5 1.5A15.5 15.5 0 014 5.5z"
+                                    stroke="currentColor"
+                                    strokeWidth="1.6"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              </span>
+                              <div className="court-reference-stack">
+                                {court.phones.length > 0 ? (
+                                  court.phones.map((phone) => <span key={`${court.slug}-${phone}`}>{phone}</span>)
+                                ) : (
+                                  <span>{notProvidedLabel}</span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="court-reference-row">
+                              <span className="court-reference-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                  <path
+                                    d="M6 8h12M4 12h16M7 16h10M9 5l-5 7 5 7M15 5l5 7-5 7"
+                                    stroke="currentColor"
+                                    strokeWidth="1.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              </span>
+                              <span>
+                                {t("court_directory_jurisdiction")}: {court.jurisdiction || notProvidedLabel}
+                              </span>
+                            </div>
+                          </div>
                         </div>
 
-                        <div className="court-directory-row">
-                          <span className="court-directory-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none">
-                              <path
-                                d="M4 5.5C4 4.67 4.67 4 5.5 4h2.1c.5 0 .95.31 1.1.79l.7 2.1c.12.38 0 .8-.29 1.06l-1.05.95a12.3 12.3 0 006.89 6.89l.95-1.05c.26-.29.68-.41 1.06-.29l2.1.7c.48.15.79.6.79 1.1v2.1c0 .83-.67 1.5-1.5 1.5A15.5 15.5 0 014 5.5z"
-                                stroke="currentColor"
-                                strokeWidth="1.6"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          </span>
-                          <span>{court.phones.length > 0 ? court.phones.join(", ") : t("court_detail_not_provided")}</span>
-                        </div>
-
-                        <div className="court-directory-row">
-                          <span className="court-directory-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none">
-                              <path
-                                d="M4 12h16M12 4c2.5 2.2 4 5.03 4 8s-1.5 5.8-4 8c-2.5-2.2-4-5.03-4-8s1.5-5.8 4-8z"
-                                stroke="currentColor"
-                                strokeWidth="1.6"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          </span>
-                          <span>{court.websiteLabel || t("court_directory_no_website")}</span>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
+                        
+                      </article>
+                    );
+                  })}
                 </div>
 
                 <div className="directory-pagination" aria-label="Courts pagination">

@@ -585,10 +585,37 @@ function case_list(PDO $pdo, bool $includeCourtFiles = false): array
             'court_file' AS source,
             c.slug AS court_slug,
             cc.status AS case_status,
+            cd.case_type AS case_type,
+            cd.case_subtype AS case_subtype,
+            COALESCE(cd.basis_type, cc.basis_group, cc.basis_type) AS basis_type,
+            COALESCE(cd.basis, cc.basis) AS basis,
+            cd.articles AS articles,
+            cd.public_prosecutor_case AS public_prosecutor_case,
+            cf.case_cost AS case_cost,
+            cf.total_case_cost AS total_case_cost,
+            cc.download_link AS download_link,
             1 AS can_edit,
             1 AS can_delete
         FROM court_cases cc
         INNER JOIN courts c ON c.id = cc.court_id
+        LEFT JOIN (
+            SELECT d.case_id, d.case_type, d.case_subtype, d.basis_type, d.basis, d.articles, d.public_prosecutor_case
+            FROM case_detail d
+            INNER JOIN (
+                SELECT case_id, MAX(id) AS max_id
+                FROM case_detail
+                GROUP BY case_id
+            ) latest_case_detail ON latest_case_detail.max_id = d.id
+        ) cd ON cd.case_id = cc.case_id
+        LEFT JOIN (
+            SELECT f.case_id, f.case_cost, f.total_case_cost
+            FROM case_financials f
+            INNER JOIN (
+                SELECT case_id, MAX(id) AS max_id
+                FROM case_financials
+                GROUP BY case_id
+            ) latest_case_financials ON latest_case_financials.max_id = f.id
+        ) cf ON cf.case_id = cc.case_id
         ORDER BY cc.filing_date DESC, cc.id DESC
     ");
 

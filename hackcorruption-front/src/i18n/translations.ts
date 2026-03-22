@@ -174,8 +174,10 @@ export type TKey =
   | "judge_directory_not_provided"
   | "judge_directory_open_profile"
   | "case_directory_search_label"
+  | "case_directory_search_criteria"
   | "case_directory_search_placeholder"
   | "case_directory_matching_records"
+  | "case_directory_filters_active"
   | "case_directory_loading_directory"
   | "case_directory_recent_limit_note"
   | "case_directory_filter_eyebrow"
@@ -206,7 +208,9 @@ export type TKey =
   | "case_directory_error_title"
   | "case_directory_empty_title"
   | "case_directory_empty_desc"
+  | "case_directory_download_document"
   | "case_directory_open_case"
+  | "case_directory_relevance"
   | "case_detail_loading"
   | "case_detail_not_found"
   | "case_detail_back"
@@ -230,6 +234,8 @@ export type TKey =
   | "case_detail_sentence_severity"
   | "case_detail_appeal"
   | "case_detail_overview"
+  | "case_detail_case_summary"
+  | "case_detail_case_details"
   | "case_detail_key_insights"
   | "case_detail_timeline"
   | "case_detail_no_timeline"
@@ -434,8 +440,10 @@ export const translations: Record<Lang, Record<TKey, string>> = {
     judge_directory_not_provided: "Not provided",
     judge_directory_open_profile: "Open profile",
     case_directory_search_label: "Search cases",
+    case_directory_search_criteria: "Search Criteria",
     case_directory_search_placeholder: "Search by case ID, court, judge, legal area, or summary",
     case_directory_matching_records: "matching records",
+    case_directory_filters_active: "filters active",
     case_directory_loading_directory: "Loading case directory...",
     case_directory_recent_limit_note: "Showing the 100 most recent cases by default",
     case_directory_filter_eyebrow: "Filter cases",
@@ -466,7 +474,9 @@ export const translations: Record<Lang, Record<TKey, string>> = {
     case_directory_error_title: "Could not load cases",
     case_directory_empty_title: "No cases match these filters",
     case_directory_empty_desc: "Adjust the filters or reset them to view matching cases.",
+    case_directory_download_document: "Download document",
     case_directory_open_case: "Open case",
+    case_directory_relevance: "Relevance",
     case_detail_loading: "Loading case...",
     case_detail_not_found: "Case not found",
     case_detail_back: "Back to Cases",
@@ -490,6 +500,8 @@ export const translations: Record<Lang, Record<TKey, string>> = {
     case_detail_sentence_severity: "Sentence severity",
     case_detail_appeal: "Appeal",
     case_detail_overview: "Overview",
+    case_detail_case_summary: "Case Summary",
+    case_detail_case_details: "Case Details",
     case_detail_key_insights: "Key insights",
     case_detail_timeline: "Timeline",
     case_detail_no_timeline: "No timeline is available for this case yet.",
@@ -750,12 +762,18 @@ export const translations: Record<Lang, Record<TKey, string>> = {
     case_detail_sentence_severity: "Тежина на пресуда",
     case_detail_appeal: "Жалба",
     case_detail_overview: "Преглед",
+    case_detail_case_summary: "Резиме на предметот",
+    case_detail_case_details: "Детали за предметот",
     case_detail_key_insights: "Клучни увиди",
     case_detail_timeline: "Временска линија",
     case_detail_no_timeline: "Сè уште нема временска линија за овој предмет.",
     case_detail_related_cases: "Поврзани предмети",
     case_detail_not_provided: "Не е достапно",
     case_detail_no_related_cases: "Сè уште нема поврзани предмети.",
+    case_directory_search_criteria: "Kriteriumi za prebaruvanje",
+    case_directory_filters_active: "aktivni filtri",
+    case_directory_download_document: "Prezemi dokument",
+    case_directory_relevance: "Relevantnost",
   },
 
   AL: {
@@ -1010,11 +1028,17 @@ export const translations: Record<Lang, Record<TKey, string>> = {
     case_detail_sentence_severity: "Ashpërsia e dënimit",
     case_detail_appeal: "Ankesa",
     case_detail_overview: "Përmbledhje",
+    case_detail_case_summary: "Përmbledhja e rastit",
+    case_detail_case_details: "Detajet e rastit",
     case_detail_key_insights: "Njohuri kryesore",
     case_detail_timeline: "Kronologjia",
     case_detail_no_timeline: "Ende nuk ka kronologji për këtë rast.",
     case_detail_related_cases: "Raste të ngjashme",
     case_detail_not_provided: "Nuk është dhënë",
     case_detail_no_related_cases: "Ende nuk ka raste të ngjashme.",
+    case_directory_search_criteria: "Kriteret e kerkimit",
+    case_directory_filters_active: "filtra aktive",
+    case_directory_download_document: "Shkarko dokumentin",
+    case_directory_relevance: "Relevanca",
   },
 };

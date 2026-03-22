@@ -1,11 +1,10 @@
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useI18n } from "../../i18n/useI18n";
 import { listCases } from "../../services/casesService";
 import type { Case } from "../../services/casesService";
 
-const PAGE_SIZE_OPTIONS = [12, 24, 48] as const;
-const DEFAULT_RECENT_LIMIT = 100;
+const PAGE_SIZE_OPTIONS = [10, 20, 30] as const;
 
 const tabClass = ({ isActive }: { isActive: boolean }) => `tab-btn${isActive ? " active" : ""}`;
 
@@ -15,11 +14,19 @@ type CaseCard = {
   court: string;
   judge: string;
   legalArea: string;
-  decisionDate: string;
   summary: string;
-  status: string;
+  decisionDate: string;
   decisionTimestamp: number;
-  searchIndex: string;
+  status: string;
+  caseType: string;
+  caseSubtype: string;
+  basisType: string;
+  basis: string;
+  articles: string;
+  caseCost: number | null;
+  totalCaseCost: number | null;
+  downloadLink: string;
+  tagLabel: string;
 };
 
 const formatDisplayDate = (value: string | null | undefined) => {
@@ -29,7 +36,7 @@ const formatDisplayDate = (value: string | null | undefined) => {
   if (Number.isNaN(parsed)) return raw;
   return new Intl.DateTimeFormat("en-GB", {
     year: "numeric",
-    month: "short",
+    month: "2-digit",
     day: "2-digit",
   }).format(new Date(parsed));
 };
@@ -49,26 +56,29 @@ const normalizeStatus = (value: string | null | undefined) => {
   return "Unknown";
 };
 
-const mapApiCaseToCard = (item: Case): CaseCard => {
-  const court = item.court?.trim() || "";
-  const judge = item.judge?.trim() || "";
-  const legalArea = item.legal_area?.trim() || "";
-  const summary = item.summary?.trim() || "";
-  const decisionDate = item.decision_date?.trim() || "";
-  const status = normalizeStatus(item.case_status);
+const normalizeText = (value: string | null | undefined) => (value ?? "").trim();
 
-  return {
-    recordKey: item.record_key,
-    id: item.id,
-    court,
-    judge,
-    legalArea,
-    decisionDate,
-    summary,
-    status,
-    decisionTimestamp: toTimestamp(decisionDate),
-    searchIndex: [item.id, court, judge, legalArea, summary, status].join(" ").toLowerCase(),
-  };
+const truncateText = (value: string, length: number) => {
+  if (value.length <= length) return value;
+  return `${value.slice(0, length).trimEnd()}...`;
+};
+
+const parseNumberFilter = (value: string) => {
+  const normalized = value.trim().replace(",", ".");
+  if (!normalized) return null;
+  const parsed = Number.parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const matchesTextFilter = (source: string, filter: string) =>
+  filter.trim() === "" || source.toLowerCase().includes(filter.trim().toLowerCase());
+
+const matchesNumericRange = (value: number | null, min: number | null, max: number | null) => {
+  if (min === null && max === null) return true;
+  if (value === null) return false;
+  if (min !== null && value < min) return false;
+  if (max !== null && value > max) return false;
+  return true;
 };
 
 const clampPage = (page: number, totalPages: number) => {
@@ -85,9 +95,44 @@ const buildPageWindow = (currentPage: number, totalPages: number) => {
   return Array.from({ length: 5 }, (_, index) => start + index);
 };
 
-const truncateText = (value: string, length: number) => {
-  if (value.length <= length) return value;
-  return `${value.slice(0, length).trimEnd()}...`;
+const uniqueSortedValues = (values: string[]) =>
+  Array.from(new Set(values.map((value) => value.trim()).filter((value) => value !== ""))).sort((left, right) =>
+    left.localeCompare(right)
+  );
+
+const mapApiCaseToCard = (item: Case): CaseCard => {
+  const court = normalizeText(item.court);
+  const judge = normalizeText(item.judge);
+  const legalArea = normalizeText(item.legal_area);
+  const summary = normalizeText(item.summary);
+  const decisionDate = normalizeText(item.decision_date);
+  const caseType = normalizeText(item.case_type);
+  const caseSubtype = normalizeText(item.case_subtype);
+  const basisType = normalizeText(item.basis_type);
+  const basis = normalizeText(item.basis);
+  const articles = normalizeText(item.articles);
+  const tagLabel = basis || basisType || caseType || legalArea || "";
+
+  return {
+    recordKey: item.record_key,
+    id: item.id,
+    court,
+    judge,
+    legalArea,
+    summary,
+    decisionDate,
+    decisionTimestamp: toTimestamp(decisionDate),
+    status: normalizeStatus(item.case_status),
+    caseType,
+    caseSubtype,
+    basisType,
+    basis,
+    articles,
+    caseCost: item.case_cost ?? null,
+    totalCaseCost: item.total_case_cost ?? null,
+    downloadLink: normalizeText(item.download_link),
+    tagLabel,
+  };
 };
 
 export default function CasesPage() {
@@ -95,19 +140,24 @@ export default function CasesPage() {
   const [cases, setCases] = useState<CaseCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filtersExpanded, setFiltersExpanded] = useState(true);
 
-  const [search, setSearch] = useState("");
-  const [courtFilter] = useState("");
-  const [judgeFilter] = useState("");
-  const [legalAreaFilter] = useState("all");
-  const [statusFilter] = useState("all");
-  const [dateFrom] = useState("");
-  const [dateTo] = useState("");
+  const [judgeFilter, setJudgeFilter] = useState("");
+  const [legalAreaFilter, setLegalAreaFilter] = useState("");
+  const [caseTypeFilter, setCaseTypeFilter] = useState("");
+  const [caseSubtypeFilter, setCaseSubtypeFilter] = useState("");
+  const [basisTypeFilter, setBasisTypeFilter] = useState("");
+  const [basisFilter, setBasisFilter] = useState("");
+  const [articleFilter, setArticleFilter] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [caseCostMin, setCaseCostMin] = useState("");
+  const [caseCostMax, setCaseCostMax] = useState("");
+  const [totalCaseCostMin, setTotalCaseCostMin] = useState("");
+  const [totalCaseCostMax, setTotalCaseCostMax] = useState("");
   const [sortBy, setSortBy] = useState("recent");
-  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(12);
+  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(10);
   const [page, setPage] = useState(1);
-
-  const deferredSearch = useDeferredValue(search);
 
   useEffect(() => {
     let mounted = true;
@@ -132,25 +182,63 @@ export default function CasesPage() {
     };
   }, []);
 
+  const legalAreaOptions = useMemo(() => uniqueSortedValues(cases.map((item) => item.legalArea)), [cases]);
+  const caseTypeOptions = useMemo(() => uniqueSortedValues(cases.map((item) => item.caseType)), [cases]);
+  const caseSubtypeOptions = useMemo(() => uniqueSortedValues(cases.map((item) => item.caseSubtype)), [cases]);
+  const basisTypeOptions = useMemo(() => uniqueSortedValues(cases.map((item) => item.basisType)), [cases]);
+  const basisOptions = useMemo(() => uniqueSortedValues(cases.map((item) => item.basis)), [cases]);
+  const articleOptions = useMemo(() => uniqueSortedValues(cases.map((item) => item.articles)), [cases]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [
+    articleFilter,
+    basisFilter,
+    basisTypeFilter,
+    caseCostMax,
+    caseCostMin,
+    caseSubtypeFilter,
+    caseTypeFilter,
+    dateFrom,
+    dateTo,
+    judgeFilter,
+    legalAreaFilter,
+    pageSize,
+    sortBy,
+    totalCaseCostMax,
+    totalCaseCostMin,
+  ]);
+
   const filteredCases = useMemo(() => {
-    const query = deferredSearch.trim().toLowerCase();
-    const courtQuery = courtFilter.trim().toLowerCase();
-    const judgeQuery = judgeFilter.trim().toLowerCase();
     const fromTimestamp = dateFrom ? Date.parse(dateFrom) : null;
     const toTimestampValue = dateTo ? Date.parse(dateTo) : null;
+    const caseCostMinValue = parseNumberFilter(caseCostMin);
+    const caseCostMaxValue = parseNumberFilter(caseCostMax);
+    const totalCaseCostMinValue = parseNumberFilter(totalCaseCostMin);
+    const totalCaseCostMaxValue = parseNumberFilter(totalCaseCostMax);
 
     const next = cases.filter((item) => {
-      if (query && !item.searchIndex.includes(query)) return false;
-      if (courtQuery && !item.court.toLowerCase().includes(courtQuery)) return false;
-      if (judgeQuery && !item.judge.toLowerCase().includes(judgeQuery)) return false;
-      if (legalAreaFilter !== "all" && item.legalArea !== legalAreaFilter) return false;
-      if (statusFilter !== "all" && item.status !== statusFilter) return false;
+      if (!matchesTextFilter(item.judge, judgeFilter)) return false;
+      if (!matchesTextFilter(item.legalArea, legalAreaFilter)) return false;
+      if (!matchesTextFilter(item.caseType, caseTypeFilter)) return false;
+      if (!matchesTextFilter(item.caseSubtype, caseSubtypeFilter)) return false;
+      if (!matchesTextFilter(item.basisType, basisTypeFilter)) return false;
+      if (!matchesTextFilter(item.basis, basisFilter)) return false;
+      if (!matchesTextFilter(item.articles, articleFilter)) return false;
 
       if (fromTimestamp !== null && !Number.isNaN(fromTimestamp) && item.decisionTimestamp < fromTimestamp) {
         return false;
       }
 
       if (toTimestampValue !== null && !Number.isNaN(toTimestampValue) && item.decisionTimestamp > toTimestampValue) {
+        return false;
+      }
+
+      if (!matchesNumericRange(item.caseCost, caseCostMinValue, caseCostMaxValue)) {
+        return false;
+      }
+
+      if (!matchesNumericRange(item.totalCaseCost, totalCaseCostMinValue, totalCaseCostMaxValue)) {
         return false;
       }
 
@@ -166,28 +254,48 @@ export default function CasesPage() {
     });
 
     return next;
-  }, [cases, courtFilter, dateFrom, dateTo, deferredSearch, judgeFilter, legalAreaFilter, sortBy, statusFilter]);
+  }, [
+    articleFilter,
+    basisFilter,
+    basisTypeFilter,
+    caseCostMax,
+    caseCostMin,
+    cases,
+    caseSubtypeFilter,
+    caseTypeFilter,
+    dateFrom,
+    dateTo,
+    judgeFilter,
+    legalAreaFilter,
+    sortBy,
+    totalCaseCostMax,
+    totalCaseCostMin,
+  ]);
 
-  const hasScopedSearch =
-    deferredSearch.trim() !== "" ||
-    courtFilter.trim() !== "" ||
-    judgeFilter.trim() !== "" ||
-    legalAreaFilter !== "all" ||
-    statusFilter !== "all" ||
-    dateFrom !== "" ||
-    dateTo !== "";
+  const activeFilterCount = [
+    judgeFilter,
+    legalAreaFilter,
+    caseTypeFilter,
+    caseSubtypeFilter,
+    basisTypeFilter,
+    basisFilter,
+    articleFilter,
+    dateFrom,
+    dateTo,
+    caseCostMin,
+    caseCostMax,
+    totalCaseCostMin,
+    totalCaseCostMax,
+  ].filter((value) => value.trim() !== "").length;
 
-  const visibleCases = useMemo(
-    () => (hasScopedSearch ? filteredCases : filteredCases.slice(0, DEFAULT_RECENT_LIMIT)),
-    [filteredCases, hasScopedSearch]
-  );
-
-  const totalPages = Math.max(1, Math.ceil(visibleCases.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(filteredCases.length / pageSize));
   const currentPage = clampPage(page, totalPages);
   const pageWindow = buildPageWindow(currentPage, totalPages);
   const pageStart = (currentPage - 1) * pageSize;
-  const pageEnd = Math.min(currentPage * pageSize, visibleCases.length);
-  const paginatedCases = visibleCases.slice(pageStart, pageEnd);
+  const pageEnd = Math.min(currentPage * pageSize, filteredCases.length);
+  const paginatedCases = filteredCases.slice(pageStart, pageEnd);
+
+  const notProvidedLabel = t("case_detail_not_provided");
 
   const getStatusLabel = (status: string) => {
     if (status === "Active") return t("status_active");
@@ -196,13 +304,27 @@ export default function CasesPage() {
     return t("status_unknown");
   };
 
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
+  const resetFilters = () => {
+    setJudgeFilter("");
+    setLegalAreaFilter("");
+    setCaseTypeFilter("");
+    setCaseSubtypeFilter("");
+    setBasisTypeFilter("");
+    setBasisFilter("");
+    setArticleFilter("");
+    setDateFrom("");
+    setDateTo("");
+    setCaseCostMin("");
+    setCaseCostMax("");
+    setTotalCaseCostMin("");
+    setTotalCaseCostMax("");
+    setSortBy("recent");
+    setPageSize(10);
     setPage(1);
   };
 
   return (
-    <main className="data-page directory-page-shell">
+    <main className="data-page directory-page-shell case-search-page-shell">
       <div className="data-tabs">
         <NavLink to="/data/courts" end className={tabClass}>
           {t("data_tab_courts")}
@@ -215,193 +337,176 @@ export default function CasesPage() {
         </NavLink>
       </div>
 
-      <section className="directory-head-section">
-        <div className="container directory-head-layout search-only">
-          <div className="directory-topbar">
-            <label className="directory-search-label" htmlFor="cases-search">
-              {t("case_directory_search_label")}
-            </label>
-            <div className="directory-search-input-wrap">
-              <span className="directory-search-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M21 21L16.65 16.65M18 11C18 14.866 14.866 18 11 18C7.134 18 4 14.866 4 11C4 7.134 7.134 4 11 4C14.866 4 18 7.134 18 11Z"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
-              <input
-                id="cases-search"
-                className="directory-search-input"
-                type="text"
-                placeholder={t("case_directory_search_placeholder")}
-                value={search}
-                onChange={(event) => handleSearchChange(event.target.value)}
-              />
-            </div>
-            <div className="directory-search-meta">
-              <span>
-                {loading
-                  ? t("case_directory_loading_directory")
-                  : `${visibleCases.length} ${t("case_directory_matching_records")}`}
-              </span>
-              
-            </div>
-          </div>
-
-          {/* <aside className="directory-filter-panel directory-filter-panel-inline">
-            <div className="directory-filter-panel-header">
+      <section className="case-search-section">
+        <div className="container case-search-layout">
+          <aside className="case-search-sidebar">
+            <div className="case-search-sidebar-header">
               <div>
-                <p className="directory-filter-eyebrow">{t("case_directory_filter_eyebrow")}</p>
-                <h2 className="directory-filter-title">{t("case_directory_refine_results")}</h2>
+                <h2 className="case-search-sidebar-title">{t("case_directory_search_criteria")}</h2>
+                <p className="case-search-sidebar-note">
+                  {activeFilterCount > 0
+                    ? `${activeFilterCount} ${t("case_directory_filters_active")}`
+                    : t("case_directory_matching_records")}
+                </p>
               </div>
-              <button className="directory-subtle-btn" type="button" onClick={resetFilters}>
-                {t("case_directory_reset")}
+              <button
+                className={`case-search-sidebar-toggle${filtersExpanded ? " expanded" : ""}`}
+                type="button"
+                onClick={() => setFiltersExpanded((value) => !value)}
+                aria-expanded={filtersExpanded}
+                aria-label={t("case_directory_search_criteria")}
+              >
+                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M6 8L10 12L14 8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </button>
             </div>
 
-            <div className="directory-filter-stack">
-              <label className="directory-field">
-                <span>{t("case_directory_court")}</span>
-                <input
-                  className="directory-field-input"
-                  type="text"
-                  placeholder={t("case_directory_court_placeholder")}
-                  value={courtFilter}
-                  onChange={(event) => {
-                    setCourtFilter(event.target.value);
-                    setPage(1);
-                  }}
-                />
-              </label>
-
-              <label className="directory-field">
-                <span>{t("case_directory_judge")}</span>
-                <input
-                  className="directory-field-input"
-                  type="text"
-                  placeholder={t("case_directory_judge_placeholder")}
-                  value={judgeFilter}
-                  onChange={(event) => {
-                    setJudgeFilter(event.target.value);
-                    setPage(1);
-                  }}
-                />
-              </label>
-
-              <label className="directory-field">
-                <span>{t("case_directory_legal_area")}</span>
-                <select
-                  className="directory-field-input"
-                  value={legalAreaFilter}
-                  onChange={(event) => {
-                    setLegalAreaFilter(event.target.value);
-                    setPage(1);
-                  }}
-                >
-                  <option value="all">{t("case_directory_all_areas")}</option>
-                  {legalAreaOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="directory-field">
-                <span>{t("case_directory_status")}</span>
-                <select
-                  className="directory-field-input"
-                  value={statusFilter}
-                  onChange={(event) => {
-                    setStatusFilter(event.target.value);
-                    setPage(1);
-                  }}
-                >
-                  <option value="all">{t("case_directory_all_statuses")}</option>
-                  <option value="Active">{t("status_active")}</option>
-                  <option value="Closed">{t("status_closed")}</option>
-                  <option value="Inactive">{t("status_inactive")}</option>
-                  <option value="Unknown">{t("status_unknown")}</option>
-                </select>
-              </label>
-
-              <div className="directory-range-grid">
+            {filtersExpanded ? (
+              <div className="case-search-sidebar-body">
+                <div className="directory-filter-stack case-search-filter-stack">
                 <label className="directory-field">
-                  <span>{t("case_directory_date_from")}</span>
-                  <input
-                    className="directory-field-input"
-                    type="date"
-                    value={dateFrom}
-                    onChange={(event) => {
-                      setDateFrom(event.target.value);
-                      setPage(1);
-                    }}
-                  />
+                    <span>{t("case_detail_judge")}</span>
+                    <input
+                      className="directory-field-input"
+                      type="text"
+                      placeholder={t("case_directory_judge_placeholder")}
+                      value={judgeFilter}
+                      onChange={(event) => setJudgeFilter(event.target.value)}
+                    />
                 </label>
 
-                <label className="directory-field">
-                  <span>{t("case_directory_date_to")}</span>
-                  <input
-                    className="directory-field-input"
-                    type="date"
-                    value={dateTo}
-                    onChange={(event) => {
-                      setDateTo(event.target.value);
-                      setPage(1);
-                    }}
-                  />
-                </label>
-              </div>
-            </div>
-          </aside> */}
-        </div>
-      </section>
-
-      <section className="directory-content-section">
-        <div className="container">
-          <div className="directory-results-panel">
-            <div className="directory-results-toolbar directory-results-toolbar-spaced">
-              <div className="directory-results-controls">
-                <label className="directory-inline-control">
-                  <span>{t("case_directory_sort")}</span>
-                  <select
-                    value={sortBy}
-                    onChange={(event) => {
-                      setSortBy(event.target.value);
-                      setPage(1);
-                    }}
-                  >
-                    <option value="recent">{t("case_directory_sort_recent")}</option>
-                    <option value="oldest">{t("case_directory_sort_oldest")}</option>
-                    <option value="court">{t("case_directory_sort_court")}</option>
-                    <option value="judge">{t("case_directory_sort_judge")}</option>
-                    <option value="status">{t("case_directory_sort_status")}</option>
-                  </select>
-                </label>
-
-                <label className="directory-inline-control">
-                  <span>{t("case_directory_per_page")}</span>
-                  <select
-                    value={pageSize}
-                    onChange={(event) => {
-                      setPageSize(Number(event.target.value) as (typeof PAGE_SIZE_OPTIONS)[number]);
-                      setPage(1);
-                    }}
-                  >
-                    {PAGE_SIZE_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
+                  <label className="directory-field">
+                    <span>{t("case_detail_legal_area")}</span>
+                    <input
+                      className="directory-field-input"
+                      type="text"
+                      list="cases-legal-area-options"
+                      placeholder={t("case_detail_legal_area")}
+                      value={legalAreaFilter}
+                      onChange={(event) => setLegalAreaFilter(event.target.value)}
+                    />
+                  </label>
+                  <datalist id="cases-legal-area-options">
+                    {legalAreaOptions.map((option) => (
+                      <option key={option} value={option} />
                     ))}
-                  </select>
-                </label>
-              </div>
-            </div>
+                  </datalist>
 
+                  <label className="directory-field">
+                    <span>{t("case_detail_case_type")}</span>
+                    <input
+                      className="directory-field-input"
+                      type="text"
+                      list="cases-type-options"
+                      placeholder={t("case_detail_case_type")}
+                      value={caseTypeFilter}
+                      onChange={(event) => setCaseTypeFilter(event.target.value)}
+                    />
+                  </label>
+                  <datalist id="cases-type-options">
+                    {caseTypeOptions.map((option) => (
+                      <option key={option} value={option} />
+                    ))}
+                  </datalist>
+
+                  <label className="directory-field">
+                    <span>{t("case_detail_case_subtype")}</span>
+                    <input
+                      className="directory-field-input"
+                      type="text"
+                      list="cases-subtype-options"
+                      placeholder={t("case_detail_case_subtype")}
+                      value={caseSubtypeFilter}
+                      onChange={(event) => setCaseSubtypeFilter(event.target.value)}
+                    />
+                  </label>
+                  <datalist id="cases-subtype-options">
+                    {caseSubtypeOptions.map((option) => (
+                      <option key={option} value={option} />
+                    ))}
+                  </datalist>
+
+                  <label className="directory-field">
+                    <span>{t("case_detail_basis_type")}</span>
+                    <input
+                      className="directory-field-input"
+                      type="text"
+                      list="cases-basis-type-options"
+                      placeholder={t("case_detail_basis_type")}
+                      value={basisTypeFilter}
+                      onChange={(event) => setBasisTypeFilter(event.target.value)}
+                    />
+                  </label>
+                  <datalist id="cases-basis-type-options">
+                    {basisTypeOptions.map((option) => (
+                      <option key={option} value={option} />
+                    ))}
+                  </datalist>
+
+                  <label className="directory-field">
+                    <span>{t("case_detail_basis")}</span>
+                    <input
+                      className="directory-field-input"
+                      type="text"
+                      list="cases-basis-options"
+                      placeholder={t("case_detail_basis")}
+                      value={basisFilter}
+                      onChange={(event) => setBasisFilter(event.target.value)}
+                    />
+                  </label>
+                  <datalist id="cases-basis-options">
+                    {basisOptions.map((option) => (
+                      <option key={option} value={option} />
+                    ))}
+                  </datalist>
+
+                  <label className="directory-field">
+                    <span>{t("case_detail_articles")}</span>
+                    <input
+                      className="directory-field-input"
+                      type="text"
+                      list="cases-article-options"
+                      placeholder={t("case_detail_articles")}
+                      value={articleFilter}
+                      onChange={(event) => setArticleFilter(event.target.value)}
+                    />
+                  </label>
+                  <datalist id="cases-article-options">
+                    {articleOptions.map((option) => (
+                      <option key={option} value={option} />
+                    ))}
+                  </datalist>
+
+                  <div className="directory-field">
+                    <span>{t("case_detail_decision_date")}</span>
+                    <div className="directory-range-grid">
+                      <input
+                        className="directory-field-input"
+                        type="date"
+                        value={dateFrom}
+                        onChange={(event) => setDateFrom(event.target.value)}
+                      />
+                      <input
+                        className="directory-field-input"
+                        type="date"
+                        value={dateTo}
+                        onChange={(event) => setDateTo(event.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                </div>
+
+                <button className="directory-subtle-btn case-search-reset-btn" type="button" onClick={resetFilters}>
+                  {t("case_directory_reset")}
+                </button>
+              </div>
+            ) : null}
+          </aside>
+
+          <div className="case-search-results">
+           
             {loading ? (
               <div className="directory-feedback-card">
                 <h3>{t("case_directory_loading_title")}</h3>
@@ -412,50 +517,68 @@ export default function CasesPage() {
                 <h3>{t("case_directory_error_title")}</h3>
                 <p>{error}</p>
               </div>
-            ) : visibleCases.length === 0 ? (
+            ) : filteredCases.length === 0 ? (
               <div className="directory-feedback-card">
                 <h3>{t("case_directory_empty_title")}</h3>
                 <p>{t("case_directory_empty_desc")}</p>
               </div>
             ) : (
               <>
-                <div className="directory-card-grid cases-directory-grid">
-                  {paginatedCases.map((item) => (
-                    <Link
-                      className="directory-card directory-card-link case-directory-card"
-                      key={item.recordKey}
-                      to={`/data/cases/${encodeURIComponent(item.id)}`}
-                    >
-                      <div className="case-directory-body">
-                        <div className="case-directory-top">
-                          <span className={`case-directory-status ${item.status.toLowerCase()}`}>
-                            {getStatusLabel(item.status)}
-                          </span>
-                          <span className="case-directory-date">
-                            {formatDisplayDate(item.decisionDate) || t("case_detail_not_provided")}
-                          </span>
-                        </div>
+                <div className="case-search-list">
+                  {paginatedCases.map((item) => {
+                    const detailHref = `/data/cases/${encodeURIComponent(item.recordKey)}`;
+                    const primaryMeta = item.legalArea || item.caseType || notProvidedLabel;
 
-                        <h3 className="directory-card-title">{item.id}</h3>
-
-                        <div className="case-directory-subtitle">
-                          <span>{item.court || t("case_detail_not_provided")}</span>
-                          <span>{item.legalArea || t("case_detail_not_provided")}</span>
-                        </div>
-
-                        <p className="case-directory-summary">
-                          {truncateText(item.summary || t("case_detail_not_provided"), 220)}
-                        </p>
-
-                        <div className="case-directory-meta">
-                          <div className="case-directory-meta-row">
-                            <span className="case-directory-meta-label">{t("case_directory_judge")}</span>
-                            <span>{item.judge || t("case_detail_not_provided")}</span>
+                    return (
+                      <article className="case-result-card" key={item.recordKey}>
+                        <div className="case-result-thumb" aria-hidden="true">
+                          <div className="case-result-thumb-sheet">
+                            <span />
+                            <span />
+                            <span />
                           </div>
                         </div>
-                      </div>
-                    </Link>
-                  ))}
+
+                        <div className="case-result-main">
+                          <Link className="case-result-title" to={detailHref}>
+                            {item.id}
+                          </Link>
+
+                          <p className="case-result-subtitle">
+                            <span>{item.court || notProvidedLabel}</span>
+                            <span aria-hidden="true">{">"}</span>
+                            <span>{primaryMeta}</span>
+                          </p>
+
+                          <p className="case-result-summary">
+                            {truncateText(item.summary || notProvidedLabel, 250)}
+                          </p>
+
+                        
+                        </div>
+
+                        <div className="case-result-side">
+                        
+
+                          <div className="case-result-side-block">
+                            <span className="case-result-side-label">{t("case_detail_judge")}</span>
+                            <span className="case-result-side-value accent">{item.judge || notProvidedLabel}</span>
+                          </div>
+
+                          <div className="case-result-side-block">
+                            <span className="case-result-side-label">{t("case_detail_decision_date")}</span>
+                            <span className="case-result-side-value">
+                              {formatDisplayDate(item.decisionDate) || notProvidedLabel}
+                            </span>
+                          </div>
+
+                        
+
+                          <span className={`case-result-status ${item.status.toLowerCase()}`}>{getStatusLabel(item.status)}</span>
+                        </div>
+                      </article>
+                    );
+                  })}
                 </div>
 
                 <div className="directory-pagination" aria-label="Cases pagination">

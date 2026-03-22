@@ -109,6 +109,26 @@ function schema_bootstrap_case_support(PDO $pdo): void
 
 }
 
+function schema_bootstrap_court_support(PDO $pdo): void
+{
+    if (!schema_table_exists($pdo, 'courts')) {
+        return;
+    }
+
+    if (!schema_column_exists($pdo, 'courts', 'is_active')) {
+        try {
+            $pdo->exec("
+                ALTER TABLE courts
+                ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 AFTER about
+            ");
+        } catch (PDOException $e) {
+            if (!schema_column_exists($pdo, 'courts', 'is_active')) {
+                throw $e;
+            }
+        }
+    }
+}
+
 function schema_bootstrap(PDO $pdo): void
 {
     static $bootstrapped = false;
@@ -118,5 +138,6 @@ function schema_bootstrap(PDO $pdo): void
     }
 
     schema_bootstrap_case_support($pdo);
+    schema_bootstrap_court_support($pdo);
     $bootstrapped = true;
 }
