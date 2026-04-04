@@ -273,7 +273,122 @@ function court_cases_list(PDO $pdo, int $courtId): array
     return $out;
 }
 
-function court_get(PDO $pdo, string $idOrSlug): ?array
+function court_case_summary(PDO $pdo, int $courtId): array
+{
+    $stmt = $pdo->prepare("
+        SELECT
+            COUNT(*) AS total_cases,
+            SUM(CASE WHEN status = 'Active' THEN 1 ELSE 0 END) AS active_cases,
+            SUM(CASE WHEN status = 'Closed' THEN 1 ELSE 0 END) AS closed_cases
+        FROM court_cases
+        WHERE court_id = :id
+    ");
+    $stmt->execute([':id' => $courtId]);
+    $row = $stmt->fetch() ?: [];
+
+    $total = (int)($row['total_cases'] ?? 0);
+    $active = (int)($row['active_cases'] ?? 0);
+    $closed = (int)($row['closed_cases'] ?? 0);
+
+    return [
+        'total' => $total,
+        'active' => $active,
+        'closed' => $closed,
+        'unknown' => max(0, $total - $active - $closed),
+    ];
+}
+
+function court_cases_filter_parts(int $courtId, ?string $search, ?string $status): array
+{
+    $where = ['court_id = :court_id'];
+    $params = [':court_id' => $courtId];
+
+    $search = trim((string)$search);
+    if ($search !== '') {
+        $where[] = "(
+            case_id LIKE :search
+            OR COALESCE(type, '') LIKE :search
+            OR COALESCE(subtype, '') LIKE :search
+            OR COALESCE(basis_type, '') LIKE :search
+            OR COALESCE(status, '') LIKE :search
+        )";
+        $params[':search'] = '%' . $search . '%';
+    }
+
+    if (in_array($status, ['Active', 'Closed', 'Unknown'], true)) {
+        if ($status === 'Unknown') {
+            $where[] = "(status IS NULL OR status = '' OR status = 'Unknown')";
+        } else {
+            $where[] = "status = :status";
+            $params[':status'] = $status;
+        }
+    }
+
+    return [
+        'sql' => implode(' AND ', $where),
+        'params' => $params,
+    ];
+}
+
+function court_cases_page(PDO $pdo, int $courtId, int $page, int $pageSize, ?string $search = null, ?string $status = null): array
+{
+    $page = max(1, $page);
+    $pageSize = max(1, min(100, $pageSize));
+    $filter = court_cases_filter_parts($courtId, $search, $status);
+
+    $countStmt = $pdo->prepare("
+        SELECT COUNT(*) AS total
+        FROM court_cases
+        WHERE {$filter['sql']}
+    ");
+    foreach ($filter['params'] as $key => $value) {
+        $countStmt->bindValue($key, $value);
+    }
+    $countStmt->execute();
+
+    $total = (int)($countStmt->fetchColumn() ?: 0);
+    $totalPages = max(1, (int)ceil($total / $pageSize));
+    $page = min($page, $totalPages);
+    $offset = ($page - 1) * $pageSize;
+
+    $stmt = $pdo->prepare("
+        SELECT id, case_id, type, subtype, basis_type, filing_date, status
+        FROM court_cases
+        WHERE {$filter['sql']}
+        ORDER BY filing_date DESC, case_id ASC
+        LIMIT :limit OFFSET :offset
+    ");
+    foreach ($filter['params'] as $key => $value) {
+        $stmt->bindValue($key, $value);
+    }
+    $stmt->bindValue(':limit', $pageSize, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+    $stmt->execute();
+    $rows = $stmt->fetchAll() ?: [];
+
+    $items = [];
+    foreach ($rows as $r) {
+        $items[] = [
+            'id' => $r['case_id'] ?? '',
+            'recordKey' => isset($r['id']) ? 'courtcase-' . (string)$r['id'] : '',
+            'type' => $r['type'] ?? '',
+            'subtype' => $r['subtype'] ?? '',
+            'basisType' => $r['basis_type'] ?? '',
+            'filingDate' => $r['filing_date'] ?? '',
+            'status' => $r['status'] ?? 'Unknown',
+        ];
+    }
+
+    return [
+        'items' => $items,
+        'page' => $page,
+        'pageSize' => $pageSize,
+        'total' => $total,
+        'totalPages' => $totalPages,
+    ];
+}
+
+function court_get(PDO $pdo, string $idOrSlug, bool $includeCases = true): ?array
 {
     $base = courts_fetch_base($pdo, $idOrSlug);
     if (!$base) return null;
@@ -285,7 +400,8 @@ function court_get(PDO $pdo, string $idOrSlug): ?array
     $base['casesPerYear'] = court_cases_per_year_list($pdo, $courtId);
     $base['avgTimeByType'] = court_avg_time_by_type_list($pdo, $courtId);
     $base['avgCostByType'] = court_avg_cost_by_type_list($pdo, $courtId);
-    $base['cases'] = court_cases_list($pdo, $courtId);
+    $base['caseSummary'] = court_case_summary($pdo, $courtId);
+    $base['cases'] = $includeCases ? court_cases_list($pdo, $courtId) : [];
 
     return $base;
 }

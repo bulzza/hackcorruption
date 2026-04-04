@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useI18n } from "../../i18n/useI18n";
+import DataSectionHeader from "../layout/DataSectionHeader";
 import { listCases } from "../../services/casesService";
 import type { Case } from "../../services/casesService";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30] as const;
-
-const tabClass = ({ isActive }: { isActive: boolean }) => `tab-btn${isActive ? " active" : ""}`;
 
 type CaseCard = {
   recordKey: string;
@@ -325,17 +324,7 @@ export default function CasesPage() {
 
   return (
     <main className="data-page directory-page-shell case-search-page-shell">
-      <div className="data-tabs">
-        <NavLink to="/data/courts" end className={tabClass}>
-          {t("data_tab_courts")}
-        </NavLink>
-        <NavLink to="/data/judges" end className={tabClass}>
-          {t("data_tab_judges")}
-        </NavLink>
-        <NavLink to="/data/cases" end className={tabClass}>
-          {t("data_tab_cases")}
-        </NavLink>
-      </div>
+      <DataSectionHeader title={t("data_tab_cases")} variant="cases" />
 
       <section className="case-search-section">
         <div className="container case-search-layout">

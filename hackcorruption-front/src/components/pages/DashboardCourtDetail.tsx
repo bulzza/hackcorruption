@@ -1,11 +1,21 @@
 import { Link, useParams } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ConfirmDialog from "../judges/ConfirmDialog";
-import { getCourtById, toggleCourtStatus } from "../../services/courtsService";
-import type { CourtDetail } from "../../services/courtsService";
+import { getCourtById, getCourtCasesPage, toggleCourtStatus } from "../../services/courtsService";
+import type { CourtCasesPage, CourtDetail } from "../../services/courtsService";
 
 const DEFAULT_CASE_PAGE_SIZE = 8;
 const CASE_PAGE_SIZE_OPTIONS = [5, 8, 12, 20];
+
+type CaseStatusFilter = "All" | "Active" | "Closed" | "Unknown";
+
+const EMPTY_CASE_PAGE: CourtCasesPage = {
+  items: [],
+  page: 1,
+  pageSize: DEFAULT_CASE_PAGE_SIZE,
+  total: 0,
+  totalPages: 1,
+};
 
 function getVisiblePages(currentPage: number, totalPages: number) {
   const windowSize = 5;
@@ -17,69 +27,159 @@ function getVisiblePages(currentPage: number, totalPages: number) {
   return Array.from({ length: windowSize }, (_, index) => start + index);
 }
 
+function buildCaseQueryKey(
+  courtId: string,
+  page: number,
+  pageSize: number,
+  search: string,
+  status: CaseStatusFilter
+) {
+  return [courtId, page, pageSize, search, status].join("::");
+}
+
 export default function DashboardCourtDetail() {
   const { id } = useParams<{ id: string }>();
   const [court, setCourt] = useState<CourtDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [caseSearchInput, setCaseSearchInput] = useState("");
   const [caseSearch, setCaseSearch] = useState("");
-  const [caseStatusFilter, setCaseStatusFilter] = useState("All");
+  const [caseStatusFilter, setCaseStatusFilter] = useState<CaseStatusFilter>("All");
   const [casePageSize, setCasePageSize] = useState(DEFAULT_CASE_PAGE_SIZE);
   const [casePage, setCasePage] = useState(1);
+  const [caseData, setCaseData] = useState<CourtCasesPage>(EMPTY_CASE_PAGE);
+  const [casesLoading, setCasesLoading] = useState(false);
+  const [casesError, setCasesError] = useState("");
+  const [loadedCaseKey, setLoadedCaseKey] = useState("");
+  const caseCacheRef = useRef<Record<string, CourtCasesPage>>({});
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setCaseSearch(caseSearchInput.trim());
+    }, 250);
+
+    return () => clearTimeout(timeoutId);
+  }, [caseSearchInput]);
 
   useEffect(() => {
     let mounted = true;
-    if (!id) return;
-    getCourtById(id)
+
+    caseCacheRef.current = {};
+    setLoadedCaseKey("");
+    setCaseData(EMPTY_CASE_PAGE);
+    setCasesError("");
+    setCasesLoading(false);
+    setCasePage(1);
+    setLoading(true);
+
+    if (!id) {
+      setCourt(null);
+      setLoading(false);
+      return;
+    }
+
+    getCourtById(id, { includeCases: false })
       .then((data) => {
         if (!mounted) return;
         setCourt(data ?? null);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        if (!mounted) return;
+        setCourt(null);
+        setLoading(false);
+      });
+
     return () => {
       mounted = false;
     };
   }, [id]);
 
-  const filteredCases = useMemo(() => {
-    const query = caseSearch.trim().toLowerCase();
-    return (court?.cases ?? []).filter((item) => {
-      const matchesQuery =
-        !query ||
-        item.id.toLowerCase().includes(query) ||
-        item.type.toLowerCase().includes(query) ||
-        item.subtype.toLowerCase().includes(query) ||
-        item.basisType.toLowerCase().includes(query) ||
-        item.status.toLowerCase().includes(query);
-      const matchesStatus =
-        caseStatusFilter === "All" ? true : item.status === caseStatusFilter;
-      return matchesQuery && matchesStatus;
-    });
-  }, [caseSearch, caseStatusFilter, court?.cases]);
-
   useEffect(() => {
     setCasePage(1);
   }, [casePageSize, caseSearch, caseStatusFilter, court?.id]);
 
-  const totalCasePages = Math.max(1, Math.ceil(filteredCases.length / casePageSize));
-  const casePageStart = (casePage - 1) * casePageSize;
-  const caseRows = filteredCases.slice(casePageStart, casePageStart + casePageSize);
+  const caseQueryKey = id
+    ? buildCaseQueryKey(id, casePage, casePageSize, caseSearch, caseStatusFilter)
+    : "";
+  const hasCurrentCaseData = loadedCaseKey === caseQueryKey;
+
+  useEffect(() => {
+    if (!id || !court?.id) return;
+
+    const cachedPage = caseCacheRef.current[caseQueryKey];
+    if (cachedPage) {
+      setCaseData(cachedPage);
+      setLoadedCaseKey(caseQueryKey);
+      setCasesError("");
+      setCasesLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const prefetchPage = (pageNumber: number, totalPages: number) => {
+      if (pageNumber > totalPages) return;
+
+      const nextKey = buildCaseQueryKey(id, pageNumber, casePageSize, caseSearch, caseStatusFilter);
+      if (caseCacheRef.current[nextKey]) return;
+
+      void getCourtCasesPage(id, {
+        page: pageNumber,
+        pageSize: casePageSize,
+        search: caseSearch,
+        status: caseStatusFilter,
+      })
+        .then((nextPage) => {
+          caseCacheRef.current[nextKey] = nextPage;
+        })
+        .catch(() => undefined);
+    };
+
+    setCasesLoading(true);
+    setCasesError("");
+
+    getCourtCasesPage(id, {
+      page: casePage,
+      pageSize: casePageSize,
+      search: caseSearch,
+      status: caseStatusFilter,
+    })
+      .then((data) => {
+        if (cancelled) return;
+        const resolvedKey = buildCaseQueryKey(id, data.page, casePageSize, caseSearch, caseStatusFilter);
+        caseCacheRef.current[resolvedKey] = data;
+        setCaseData(data);
+        setLoadedCaseKey(resolvedKey);
+        if (data.page !== casePage) {
+          setCasePage(data.page);
+        }
+        setCasesLoading(false);
+        prefetchPage(data.page + 1, data.totalPages);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setCasesError(err instanceof Error ? err.message : "Failed to load case files.");
+        setCasesLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [casePage, casePageSize, caseQueryKey, caseSearch, caseStatusFilter, court?.id, id]);
+
+  const totalCases = court?.caseSummary.total ?? 0;
+  const activeCases = court?.caseSummary.active ?? 0;
+  const closedCases = court?.caseSummary.closed ?? 0;
+  const unknownCases = court?.caseSummary.unknown ?? 0;
+  const filteredTotal = hasCurrentCaseData ? caseData.total : 0;
+  const totalCasePages = hasCurrentCaseData ? caseData.totalPages : 1;
+  const caseRows = hasCurrentCaseData ? caseData.items : [];
   const visibleCasePages = getVisiblePages(casePage, totalCasePages);
-  const totalCases = court?.cases.length ?? 0;
-  const activeCases = useMemo(
-    () => (court?.cases ?? []).filter((item) => item.status === "Active").length,
-    [court?.cases]
-  );
-  const closedCases = useMemo(
-    () => (court?.cases ?? []).filter((item) => item.status === "Closed").length,
-    [court?.cases]
-  );
-  const unknownCases = Math.max(0, totalCases - activeCases - closedCases);
-  const caseShowingFrom = filteredCases.length === 0 ? 0 : casePageStart + 1;
+  const caseShowingFrom = filteredTotal === 0 ? 0 : (casePage - 1) * casePageSize + 1;
   const caseShowingTo =
-    filteredCases.length === 0 ? 0 : Math.min(casePageStart + caseRows.length, filteredCases.length);
-  const hasCaseFilters = caseSearch.trim().length > 0 || caseStatusFilter !== "All";
+    filteredTotal === 0 ? 0 : Math.min((casePage - 1) * casePageSize + caseRows.length, filteredTotal);
+  const hasCaseFilters = caseSearchInput.trim().length > 0 || caseStatusFilter !== "All";
 
   useEffect(() => {
     if (casePage > totalCasePages) {
@@ -88,6 +188,7 @@ export default function DashboardCourtDetail() {
   }, [casePage, totalCasePages]);
 
   const resetCaseFilters = () => {
+    setCaseSearchInput("");
     setCaseSearch("");
     setCaseStatusFilter("All");
     setCasePageSize(DEFAULT_CASE_PAGE_SIZE);
@@ -97,7 +198,7 @@ export default function DashboardCourtDetail() {
   const handleToggleStatus = async () => {
     if (!court) return;
     try {
-      const updated = await toggleCourtStatus(court.id);
+      const updated = await toggleCourtStatus(court.slug);
       setCourt((prev) => (prev ? { ...prev, status: updated.status } : prev));
     } catch (err) {
       console.warn(err);
@@ -288,8 +389,8 @@ export default function DashboardCourtDetail() {
                       className="admin-input"
                       type="search"
                       placeholder="Search case ID, type, or basis"
-                      value={caseSearch}
-                      onChange={(e) => setCaseSearch(e.target.value)}
+                      value={caseSearchInput}
+                      onChange={(e) => setCaseSearchInput(e.target.value)}
                     />
                   </label>
                   <label className="admin-form-field">
@@ -297,7 +398,7 @@ export default function DashboardCourtDetail() {
                     <select
                       className="admin-input"
                       value={caseStatusFilter}
-                      onChange={(e) => setCaseStatusFilter(e.target.value)}
+                      onChange={(e) => setCaseStatusFilter(e.target.value as CaseStatusFilter)}
                     >
                       <option value="All">All</option>
                       <option value="Active">Active</option>
@@ -309,7 +410,9 @@ export default function DashboardCourtDetail() {
 
                 <div className="admin-toolbar-right">
                   <div className="admin-toolbar-meta">
-                    Showing {caseShowingFrom}-{caseShowingTo} of {filteredCases.length} case files
+                    {casesLoading && !hasCurrentCaseData
+                      ? "Loading case files..."
+                      : `Showing ${caseShowingFrom}-${caseShowingTo} of ${filteredTotal} case files`}
                   </div>
                   <label className="admin-form-field admin-form-field-sm">
                     <span>Rows</span>
@@ -338,10 +441,12 @@ export default function DashboardCourtDetail() {
 
               {totalCases === 0 ? (
                 <div className="admin-empty-inline">No case files recorded for this court.</div>
-              ) : filteredCases.length === 0 ? (
-                <div className="admin-empty-inline">
-                  No case files match the current filters.
-                </div>
+              ) : casesError ? (
+                <div className="admin-empty-inline">{casesError}</div>
+              ) : casesLoading && !hasCurrentCaseData ? (
+                <div className="admin-loading">Loading case files...</div>
+              ) : filteredTotal === 0 ? (
+                <div className="admin-empty-inline">No case files match the current filters.</div>
               ) : (
                 <>
                   <div className="admin-table-wrap">
@@ -402,15 +507,7 @@ export default function DashboardCourtDetail() {
                       <button
                         className="admin-btn ghost"
                         type="button"
-                        disabled={casePage === 1}
-                        onClick={() => setCasePage(1)}
-                      >
-                        First
-                      </button>
-                      <button
-                        className="admin-btn ghost"
-                        type="button"
-                        disabled={casePage === 1}
+                        disabled={casePage === 1 || casesLoading}
                         onClick={() => setCasePage((prev) => Math.max(1, prev - 1))}
                       >
                         Previous
@@ -420,6 +517,7 @@ export default function DashboardCourtDetail() {
                           key={pageNumber}
                           className={`admin-btn ${pageNumber === casePage ? "secondary" : "ghost"}`}
                           type="button"
+                          disabled={casesLoading}
                           onClick={() => setCasePage(pageNumber)}
                         >
                           {pageNumber}
@@ -428,18 +526,10 @@ export default function DashboardCourtDetail() {
                       <button
                         className="admin-btn ghost"
                         type="button"
-                        disabled={casePage === totalCasePages}
+                        disabled={casePage === totalCasePages || casesLoading}
                         onClick={() => setCasePage((prev) => Math.min(totalCasePages, prev + 1))}
                       >
                         Next
-                      </button>
-                      <button
-                        className="admin-btn ghost"
-                        type="button"
-                        disabled={casePage === totalCasePages}
-                        onClick={() => setCasePage(totalCasePages)}
-                      >
-                        Last
                       </button>
                     </div>
                   </div>

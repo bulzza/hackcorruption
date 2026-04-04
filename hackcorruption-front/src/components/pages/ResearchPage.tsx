@@ -4,6 +4,7 @@ import type { ResearchCard } from "../../data/research";
 import { publications, analyses } from "../../data/research";
 import { useI18n } from "../../i18n/useI18n";
 import type { Lang, TKey } from "../../i18n/translations";
+import DataSectionHeader from "../layout/DataSectionHeader";
 
 function FolderIcon() {
   return (
@@ -289,16 +290,10 @@ export default function ResearchPage() {
 
   return (
     <main className="research-page-main">
-      <section className="research-hero">
-        <div className="container research-hero-content">
-          <span className="research-hero-label">{t("research_hero_label")}</span>
-          <h1 className="research-hero-title">{t("research_hero_title")}</h1>
-          <p className="research-hero-subtitle">{t("research_hero_subtitle")}</p>
-        </div>
-      </section>
+      <DataSectionHeader title={t("nav_research")} variant="research" showTabs={false} />
 
       <section className="research-grid-section">
-        <div className="container">
+        <div className="container research-content-container">
           <div className="research-slider-shell">
             <div className="research-slider-rows">
               <ResearchSliderRow

@@ -18,6 +18,7 @@ export type Court = {
 export type CourtDetail = CourtItem & {
   status: CourtStatus;
   slug: string;
+  caseSummary: CourtCaseSummary;
 };
 
 export type CourtInput = {
@@ -37,6 +38,32 @@ type ApiResponse<T> = {
   data: T;
   message?: string;
   error?: string;
+};
+
+export type CourtCaseSummary = {
+  total: number;
+  active: number;
+  closed: number;
+  unknown: number;
+};
+
+export type CourtCasesPage = {
+  items: CourtCaseRow[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+};
+
+type GetCourtByIdOptions = {
+  includeCases?: boolean;
+};
+
+type GetCourtCasesPageOptions = {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  status?: "All" | CourtCaseRow["status"];
 };
 
 type CourtRow = {
@@ -76,6 +103,21 @@ type CourtCaseRowResponse = {
   status?: CourtCaseRow["status"] | string | null;
 };
 
+type CourtCaseSummaryResponse = {
+  total?: number | string | null;
+  active?: number | string | null;
+  closed?: number | string | null;
+  unknown?: number | string | null;
+};
+
+type CourtCasesPageResponse = {
+  items?: CourtCaseRowResponse[];
+  page?: number | string | null;
+  pageSize?: number | string | null;
+  total?: number | string | null;
+  totalPages?: number | string | null;
+};
+
 type CourtDetailResponse = CourtRow & {
   metrics?: CourtMetricRow[];
   caseTypes?: CourtChartRow[];
@@ -83,6 +125,7 @@ type CourtDetailResponse = CourtRow & {
   avgTimeByType?: CourtChartRow[];
   avgCostByType?: CourtChartRow[];
   cases?: CourtCaseRowResponse[];
+  caseSummary?: CourtCaseSummaryResponse;
 };
 
 const chartColors = ["#3b6f95", "#9ac6e5", "#e7a24a", "#78b8b1", "#4f78a8"];
@@ -146,6 +189,27 @@ const mapCases = (items: CourtCaseRowResponse[] | null | undefined): CourtCaseRo
     status: normalizeCaseStatus(item.status ?? undefined),
   }));
 
+const toNumber = (value: number | string | null | undefined) => {
+  if (value === null || value === undefined || value === "") return 0;
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? 0 : parsed;
+};
+
+const mapCaseSummary = (value: CourtCaseSummaryResponse | null | undefined): CourtCaseSummary => ({
+  total: toNumber(value?.total),
+  active: toNumber(value?.active),
+  closed: toNumber(value?.closed),
+  unknown: toNumber(value?.unknown),
+});
+
+const mapCourtCasesPage = (value: CourtCasesPageResponse | null | undefined): CourtCasesPage => ({
+  items: mapCases(value?.items),
+  page: Math.max(1, toNumber(value?.page) || 1),
+  pageSize: Math.max(1, toNumber(value?.pageSize) || 1),
+  total: Math.max(0, toNumber(value?.total)),
+  totalPages: Math.max(1, toNumber(value?.totalPages) || 1),
+});
+
 const mapCourtDetail = (detail: CourtDetailResponse): CourtDetail => ({
   id: detail.slug ?? String(detail.id ?? ""),
   slug: detail.slug ?? "",
@@ -163,6 +227,7 @@ const mapCourtDetail = (detail: CourtDetailResponse): CourtDetail => ({
   avgTimeByType: mapChartItems(detail.avgTimeByType),
   avgCostByType: mapChartItems(detail.avgCostByType),
   cases: mapCases(detail.cases),
+  caseSummary: mapCaseSummary(detail.caseSummary),
   status: toStatus(detail),
 });
 
@@ -195,9 +260,40 @@ export async function listCourts(): Promise<Court[]> {
   return data.map(mapCourtRow);
 }
 
-export async function getCourtById(id: number | string): Promise<CourtDetail | null> {
-  const data = await requestJson<CourtDetailResponse>(`${API_BASE}/courts/${encodeURIComponent(String(id))}`);
+export async function getCourtById(
+  id: number | string,
+  options: GetCourtByIdOptions = {}
+): Promise<CourtDetail | null> {
+  const params = new URLSearchParams();
+  if (options.includeCases === false) {
+    params.set("includeCases", "0");
+  }
+  const query = params.toString();
+  const url = `${API_BASE}/courts/${encodeURIComponent(String(id))}${query ? `?${query}` : ""}`;
+  const data = await requestJson<CourtDetailResponse>(url);
   return data ? mapCourtDetail(data) : null;
+}
+
+export async function getCourtCasesPage(
+  id: number | string,
+  options: GetCourtCasesPageOptions = {}
+): Promise<CourtCasesPage> {
+  const params = new URLSearchParams();
+  params.set("page", String(options.page ?? 1));
+  params.set("pageSize", String(options.pageSize ?? 8));
+
+  const search = options.search?.trim();
+  if (search) {
+    params.set("q", search);
+  }
+  if (options.status && options.status !== "All") {
+    params.set("status", options.status);
+  }
+
+  const data = await requestJson<CourtCasesPageResponse>(
+    `${API_BASE}/courts/${encodeURIComponent(String(id))}/cases?${params.toString()}`
+  );
+  return mapCourtCasesPage(data);
 }
 
 export async function createCourt(input: CourtInput): Promise<Court> {

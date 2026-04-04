@@ -4,7 +4,10 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../src/db.php';
+require_once __DIR__ . '/../src/access.php';
 require_once __DIR__ . '/../src/judges/judges_repo.php';
+
+require_site_or_admin_access();
 
 function get_pdo(): PDO
 {

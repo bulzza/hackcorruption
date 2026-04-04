@@ -24,7 +24,7 @@ export default function DashboardCourtEdit() {
   useEffect(() => {
     let mounted = true;
     if (!id) return;
-    getCourtById(id)
+    getCourtById(id, { includeCases: false })
       .then((data) => {
         if (!mounted) return;
         setCourt(data);

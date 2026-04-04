@@ -26,12 +26,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
 
 // ---- continue normal app ----
 require_once __DIR__ . '/../src/response.php';
+require_once __DIR__ . '/../src/access.php';
 require_once __DIR__ . '/../src/dashboard/dashboard.php'; // dashboard controllers
 require_once __DIR__ . '/../src/courts/courts.php'; // courts controllers
 require_once __DIR__ . '/../src/judges/judges.php'; // controllers (we created earlier)
 require_once __DIR__ . '/../src/cases/cases.php'; // cases controllers
 require_once __DIR__ . '/../src/users/users.php'; // users controllers
 require_once __DIR__ . '/../src/profile/profile.php'; // profile controllers
+
+ensure_session_started();
 
 // Always respond JSON for API index.php routes
 header('Content-Type: application/json; charset=utf-8');
@@ -58,6 +61,7 @@ $subPath = $subPath === '' ? '/' : $subPath;
 
 // GET /dashboard/summary
 if ($method === 'GET' && $subPath === '/dashboard/summary') {
+  require_admin_access();
   dashboard_summary_controller();
   exit;
 }
@@ -66,65 +70,83 @@ if ($method === 'GET' && $subPath === '/dashboard/summary') {
 
 // GET /courts
 if ($method === 'GET' && $subPath === '/courts') {
+  require_site_or_admin_access();
   courts_list_controller();
+  exit;
+}
+
+// GET /courts/{id}/cases
+if ($method === 'GET' && preg_match('#^/courts/([^/]+)/cases$#', $subPath, $m)) {
+  require_site_or_admin_access();
+  court_cases_controller($m[1]);
   exit;
 }
 
 // GET /courts/{id}
 if ($method === 'GET' && preg_match('#^/courts/([^/]+)$#', $subPath, $m)) {
+  require_site_or_admin_access();
   court_get_controller($m[1]);
   exit;
 }
 
 // POST /courts/create
 if ($method === 'POST' && $subPath === '/courts/create') {
+  require_admin_access();
   court_create_controller();
   exit;
 }
 
 // POST /courts/{id}/update
 if ($method === 'POST' && preg_match('#^/courts/([^/]+)/update$#', $subPath, $m)) {
+  require_admin_access();
   court_update_controller($m[1]);
   exit;
 }
 
 // PATCH /courts/{id}/toggle-active
 if ($method === 'PATCH' && preg_match('#^/courts/([^/]+)/toggle-active$#', $subPath, $m)) {
+  require_admin_access();
   court_toggle_active_controller($m[1]);
   exit;
 }
 
 // DELETE /courts/{id}
 if ($method === 'DELETE' && preg_match('#^/courts/([^/]+)$#', $subPath, $m)) {
+  require_admin_access();
   court_delete_controller($m[1]);
   exit;
 }
 
 // GET /judges
 if ($method === 'GET' && $subPath === '/judges') {
+  require_site_or_admin_access();
   judges_list_controller();
   exit;
 }
 
 // GET /judges/{id}
 if ($method === 'GET' && preg_match('#^/judges/(\d+)$#', $subPath, $m)) {
+  require_site_or_admin_access();
   judge_get_controller((int)$m[1]);
   exit;
 }
 
 if ($method === 'POST' && $subPath === '/judges/create') {
+  require_admin_access();
   judge_create_controller();
   exit;
 }
 
 // POST /judges/{id}/update
 if ($method === 'POST' && preg_match('#^/judges/(\d+)/update$#', $subPath, $m)) {
+  require_admin_access();
   judge_update_controller((int)$m[1]);
   exit;
 }
 
 // PATCH /judges/{id}/toggle-active
 if ($method === 'PATCH' && preg_match('#^/judges/(\d+)/toggle-active$#', $subPath, $m)) {
+  require_admin_access();
   judge_toggle_active_controller((int)$m[1]);
   exit;
 }
@@ -133,6 +155,12 @@ if ($method === 'PATCH' && preg_match('#^/judges/(\d+)/toggle-active$#', $subPat
 
 // GET /cases or GET /cases?id=... (query param support for IDs with slashes)
 if ($method === 'GET' && ($subPath === '/cases' || $subPath === '/cases/')) {
+  $includeCourtFiles = isset($_GET['include_court_files']) && $_GET['include_court_files'] === '1';
+  if ($includeCourtFiles) {
+    require_admin_access();
+  } else {
+    require_site_or_admin_access();
+  }
   if (isset($_GET['id']) && !empty($_GET['id'])) {
     // Handle /cases?id=К-1521/24 for problematic case IDs
     case_get_controller($_GET['id']);
@@ -145,12 +173,14 @@ if ($method === 'GET' && ($subPath === '/cases' || $subPath === '/cases/')) {
 
 // POST /cases/create (must come before generic /cases/{id})
 if ($method === 'POST' && $subPath === '/cases/create') {
+  require_admin_access();
   case_create_controller();
   exit;
 }
 
 // POST /cases/{id}/update or POST /cases?id=...&action=update (query param support)
 if ($method === 'POST' && ($subPath === '/cases' || $subPath === '/cases/')) {
+  require_admin_access();
   if (isset($_GET['id']) && !empty($_GET['id'])) {
     case_update_controller($_GET['id']);
   } else {
@@ -159,18 +189,21 @@ if ($method === 'POST' && ($subPath === '/cases' || $subPath === '/cases/')) {
   exit;
 }
 if ($method === 'POST' && preg_match('#^/cases/(.+)/update$#', $subPath, $m)) {
+  require_admin_access();
   case_update_controller($m[1]);
   exit;
 }
 
 // GET /cases/{id}
 if ($method === 'GET' && preg_match('#^/cases/(.+)$#', $subPath, $m)) {
+  require_site_or_admin_access();
   case_get_controller($m[1]);
   exit;
 }
 
 // DELETE /cases/{id} or DELETE /cases?id=... (query param support)
 if ($method === 'DELETE' && ($subPath === '/cases' || $subPath === '/cases/')) {
+  require_admin_access();
   if (isset($_GET['id']) && !empty($_GET['id'])) {
     case_delete_controller($_GET['id']);
   } else {
@@ -179,6 +212,7 @@ if ($method === 'DELETE' && ($subPath === '/cases' || $subPath === '/cases/')) {
   exit;
 }
 if ($method === 'DELETE' && preg_match('#^/cases/(.+)$#', $subPath, $m)) {
+  require_admin_access();
   case_delete_controller($m[1]);
   exit;
 }
@@ -187,30 +221,35 @@ if ($method === 'DELETE' && preg_match('#^/cases/(.+)$#', $subPath, $m)) {
 
 // GET /users
 if ($method === 'GET' && $subPath === '/users') {
+  require_admin_access();
   users_list_controller();
   exit;
 }
 
 // GET /users/{id}
 if ($method === 'GET' && preg_match('#^/users/(\d+)$#', $subPath, $m)) {
+  require_admin_access();
   user_get_controller((int)$m[1]);
   exit;
 }
 
 // POST /users/create
 if ($method === 'POST' && $subPath === '/users/create') {
+  require_admin_access();
   user_create_controller();
   exit;
 }
 
 // POST /users/{id}/update
 if ($method === 'POST' && preg_match('#^/users/(\d+)/update$#', $subPath, $m)) {
+  require_admin_access();
   user_update_controller((int)$m[1]);
   exit;
 }
 
 // PATCH /users/{id}/toggle-active
 if ($method === 'PATCH' && preg_match('#^/users/(\d+)/toggle-active$#', $subPath, $m)) {
+  require_admin_access();
   user_toggle_active_controller((int)$m[1]);
   exit;
 }
@@ -219,12 +258,14 @@ if ($method === 'PATCH' && preg_match('#^/users/(\d+)/toggle-active$#', $subPath
 
 // GET /profile
 if ($method === 'GET' && $subPath === '/profile') {
+  require_admin_access();
   profile_get_controller();
   exit;
 }
 
 // POST /profile/update
 if ($method === 'POST' && $subPath === '/profile/update') {
+  require_admin_access();
   profile_update_controller();
   exit;
 }
@@ -235,6 +276,7 @@ if ($method === 'POST' && $subPath === '/profile/update') {
 // Method not allowed example (optional): if endpoint exists but method is wrong
 if (
   $subPath === '/courts' ||
+  preg_match('#^/courts/[^/]+/cases$#', $subPath) ||
   preg_match('#^/courts/[^/]+$#', $subPath) ||
   preg_match('#^/courts/[^/]+/update$#', $subPath) ||
   preg_match('#^/courts/[^/]+/toggle-active$#', $subPath) ||

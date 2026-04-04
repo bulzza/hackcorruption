@@ -26,6 +26,39 @@ function courts_read_body(): array
     return is_array($decoded) ? $decoded : [];
 }
 
+function courts_read_bool_query(array $keys, bool $default = true): bool
+{
+    foreach ($keys as $key) {
+        if (!isset($_GET[$key])) {
+            continue;
+        }
+
+        $value = strtolower(trim((string)$_GET[$key]));
+        if ($value === '' || in_array($value, ['1', 'true', 'yes', 'on'], true)) {
+            return true;
+        }
+        if (in_array($value, ['0', 'false', 'no', 'off'], true)) {
+            return false;
+        }
+    }
+
+    return $default;
+}
+
+function courts_read_int_query(string $key, int $default, int $min = 1, int $max = 100): int
+{
+    if (!isset($_GET[$key])) {
+        return $default;
+    }
+
+    $value = filter_var($_GET[$key], FILTER_VALIDATE_INT);
+    if ($value === false) {
+        return $default;
+    }
+
+    return max($min, min($max, $value));
+}
+
 function courts_list_controller(): void
 {
     $pdo = courts_get_pdo();
@@ -39,12 +72,39 @@ function courts_list_controller(): void
 function court_get_controller(string $idOrSlug): void
 {
     $pdo = courts_get_pdo();
-    $data = court_get($pdo, $idOrSlug);
+    $includeCases = courts_read_bool_query(['includeCases', 'include_cases'], true);
+    $data = court_get($pdo, $idOrSlug, $includeCases);
     if (!$data) {
         json_response(['ok' => false, 'error' => 'Court not found'], 404);
         return;
     }
     $data['status'] = ((int)($data['is_active'] ?? 1) === 1) ? 'Active' : 'Inactive';
+    json_response(['ok' => true, 'data' => $data], 200);
+}
+
+function court_cases_controller(string $idOrSlug): void
+{
+    $pdo = courts_get_pdo();
+    $base = courts_fetch_base($pdo, $idOrSlug);
+    if (!$base) {
+        json_response(['ok' => false, 'error' => 'Court not found'], 404);
+        return;
+    }
+
+    $page = courts_read_int_query('page', 1, 1, 100000);
+    $pageSize = courts_read_int_query('pageSize', 8, 1, 100);
+    $search = trim((string)($_GET['q'] ?? $_GET['search'] ?? ''));
+    $status = trim((string)($_GET['status'] ?? ''));
+
+    $data = court_cases_page(
+        $pdo,
+        (int)$base['id'],
+        $page,
+        $pageSize,
+        $search !== '' ? $search : null,
+        $status !== '' ? $status : null
+    );
+
     json_response(['ok' => true, 'data' => $data], 200);
 }
 

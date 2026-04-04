@@ -20,10 +20,46 @@
 .nav-link:hover { color: #fff; }
 .nav-link.active { color: #fff; font-weight: 600; }
 
+.header-utilities {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .language-selector { display: flex; align-items: center; gap: 0.5rem; margin-left: 1rem; color: #ccc; font-size: 0.95rem; font-weight: 500; }
 .lang-link { color: #ccc; text-decoration: none; transition: color 0.2s; }
 .lang-link:hover, .lang-link.active { color: #fff; font-weight: 600; }
 .lang-separator { color: #555; font-size: 0.9rem; }
+
+.site-access-logout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0.55rem 0.95rem;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: transparent;
+  color: #f3f4f6;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background-color 0.2s;
+}
+
+.site-access-logout:hover {
+  border-color: rgba(255, 255, 255, 0.65);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.site-access-logout:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
 
 /* Buttons */
 .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.75rem 1.5rem; font-weight: 500; text-decoration: none; transition: opacity 0.2s; border: none; cursor: pointer; font-size: 0.95rem; }

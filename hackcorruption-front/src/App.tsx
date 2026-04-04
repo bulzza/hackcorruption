@@ -1,19 +1,25 @@
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { AUTH_ME_URL } from "./services/apiConfig";
+import {
+  SITE_ACCESS_STATE_KEY,
+  clearSiteAccessState,
+  getSiteAccessSession,
+} from "./services/siteAccessService";
 import Header from "./components/layout/Header";
 import Footer from "./components/layout/Footer";
 import DashboardLayout from "./components/layout/DashboardLayout";
-import CasesPage from "../src/components/pages/CasesPage";
-import CaseDetailPage from "../src/components/pages/CaseDetailPage";
-import CourtsPage from "../src/components/pages/CourtsPage";
-import CourtDetailPage from "../src/components/pages/CourtDetailPage";
-import JudgesPage from "../src/components/pages/JudgesPage";
-import JudgeDetailPage from "../src/components/pages/JudgeDetailPage";
+import CasesPage from "./components/pages/CasesPage";
+import CaseDetailPage from "./components/pages/CaseDetailPage";
+import CourtsPage from "./components/pages/CourtsPage";
+import CourtDetailPage from "./components/pages/CourtDetailPage";
+import JudgesPage from "./components/pages/JudgesPage";
+import JudgeDetailPage from "./components/pages/JudgeDetailPage";
 import LandingPage from "./components/pages/LandingPage";
 import ResearchPage from "./components/pages/ResearchPage";
 import ContactPage from "./components/pages/ContactPage";
 import LoginPage from "./components/pages/LoginPage";
+import SiteAccessPage from "./components/pages/SiteAccessPage";
 import DashboardPage from "./components/pages/DashboardPage";
 import CrudPlaceholderPage from "./components/pages/CrudPlaceholderPage";
 import DashboardJudgesList from "./components/pages/DashboardJudgesList";
@@ -39,54 +45,126 @@ export default function App() {
   const location = useLocation();
   const isLanding = location.pathname === "/";
   const isDashboard = location.pathname.startsWith("/dashboard");
+  const isSiteAccess = location.pathname === "/site-access";
+  const showChrome = !isDashboard && !isSiteAccess;
 
   return (
     <div id="app" className={isLanding ? "landing-theme" : "light-theme"}>
-      {!isDashboard && <Header />}
+      {showChrome && <Header />}
 
       <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/data/courts" element={<CourtsPage />} />
-        <Route path="/data/courts/:courtId" element={<CourtDetailPage />} />
+        <Route path="/site-access" element={<SiteAccessPage />} />
+        <Route
+          path="/"
+          element={
+            <RequireSiteAccess>
+              <LandingPage />
+            </RequireSiteAccess>
+          }
+        />
+        <Route
+          path="/data/courts"
+          element={
+            <RequireSiteAccess>
+              <CourtsPage />
+            </RequireSiteAccess>
+          }
+        />
+        <Route
+          path="/data/courts/:courtId"
+          element={
+            <RequireSiteAccess>
+              <CourtDetailPage />
+            </RequireSiteAccess>
+          }
+        />
         <Route
           path="/data/courts/new"
           element={
-            <CrudPlaceholderPage
-              title="Create a new court"
-              description="Set up court details, jurisdiction metadata, and reporting rules."
-              backTo="/dashboard"
-              backLabel="Back to dashboard"
-            />
+            <RequireSiteAccess>
+              <CrudPlaceholderPage
+                title="Create a new court"
+                description="Set up court details, jurisdiction metadata, and reporting rules."
+                backTo="/dashboard"
+                backLabel="Back to dashboard"
+              />
+            </RequireSiteAccess>
           }
         />
-        <Route path="/data/cases" element={<CasesPage />} />
-        <Route path="/data/cases/:caseId" element={<CaseDetailPage />} />
+        <Route
+          path="/data/cases"
+          element={
+            <RequireSiteAccess>
+              <CasesPage />
+            </RequireSiteAccess>
+          }
+        />
+        <Route
+          path="/data/cases/:caseId"
+          element={
+            <RequireSiteAccess>
+              <CaseDetailPage />
+            </RequireSiteAccess>
+          }
+        />
         <Route
           path="/data/cases/new"
           element={
-            <CrudPlaceholderPage
-              title="Create a new case"
-              description="Capture filings, parties, evidence, and tracking milestones."
-              backTo="/dashboard"
-              backLabel="Back to dashboard"
-            />
+            <RequireSiteAccess>
+              <CrudPlaceholderPage
+                title="Create a new case"
+                description="Capture filings, parties, evidence, and tracking milestones."
+                backTo="/dashboard"
+                backLabel="Back to dashboard"
+              />
+            </RequireSiteAccess>
           }
         />
-        <Route path="/data/judges" element={<JudgesPage />} />
-        <Route path="/data/judges/:judgeId" element={<JudgeDetailPage />} />
+        <Route
+          path="/data/judges"
+          element={
+            <RequireSiteAccess>
+              <JudgesPage />
+            </RequireSiteAccess>
+          }
+        />
+        <Route
+          path="/data/judges/:judgeId"
+          element={
+            <RequireSiteAccess>
+              <JudgeDetailPage />
+            </RequireSiteAccess>
+          }
+        />
         <Route
           path="/data/judges/new"
           element={
-            <CrudPlaceholderPage
-              title="Create a new judge"
-              description="Document profiles, assignments, and review signals."
-              backTo="/dashboard"
-              backLabel="Back to dashboard"
-            />
+            <RequireSiteAccess>
+              <CrudPlaceholderPage
+                title="Create a new judge"
+                description="Document profiles, assignments, and review signals."
+                backTo="/dashboard"
+                backLabel="Back to dashboard"
+              />
+            </RequireSiteAccess>
           }
         />
-        <Route path="/research" element={<ResearchPage />} />
-        <Route path="/contact" element={<ContactPage />} />
+        <Route
+          path="/research"
+          element={
+            <RequireSiteAccess>
+              <ResearchPage />
+            </RequireSiteAccess>
+          }
+        />
+        <Route
+          path="/contact"
+          element={
+            <RequireSiteAccess>
+              <ContactPage />
+            </RequireSiteAccess>
+          }
+        />
         <Route path="/login" element={<LoginPage />} />
         <Route
           path="/dashboard"
@@ -114,13 +192,55 @@ export default function App() {
           <Route path="users/:id" element={<DashboardUserDetail />} />
           <Route path="users/:id/edit" element={<DashboardUserEdit />} />
         </Route>
-
-        
       </Routes>
 
-      {!isDashboard && <Footer />}
+      {showChrome && <Footer />}
     </div>
   );
+}
+
+function RequireSiteAccess({ children }: { children: React.ReactElement }) {
+  const location = useLocation();
+  const [status, setStatus] = useState<"checking" | "authed" | "guest">("checking");
+
+  useEffect(() => {
+    let mounted = true;
+
+    getSiteAccessSession()
+      .then((data) => {
+        if (!mounted) return;
+        if (data?.ok === true) {
+          try {
+            localStorage.setItem(SITE_ACCESS_STATE_KEY, "granted");
+          } catch {}
+          setStatus("authed");
+          return;
+        }
+        clearSiteAccessState();
+        setStatus("guest");
+      })
+      .catch(() => {
+        if (!mounted) return;
+        clearSiteAccessState();
+        setStatus("guest");
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (status === "checking") return null;
+  if (status === "guest") {
+    return (
+      <Navigate
+        to="/site-access"
+        replace
+        state={{ from: `${location.pathname}${location.search}${location.hash}` }}
+      />
+    );
+  }
+  return children;
 }
 
 function RequireAuth({ children }: { children: React.ReactElement }) {
@@ -158,7 +278,7 @@ function RequireAuth({ children }: { children: React.ReactElement }) {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [storedState]);
 
   if (status === "checking") return null;
   if (status === "guest") return <Navigate to="/login" replace />;
